@@ -1,0 +1,72 @@
+# Smart Shelf Life Prediction Model — Project Configuration
+# ----------------------------------------------------------
+# Adjust these values to change dataset paths, logging verbosity,
+# and measurement validation ranges without modifying source code.
+
+data:
+  root_dir: "data"
+  fruit: "mango"
+  environments:
+    - "ambient-environment"
+    - "controlled-environment"
+  protocols:
+    - "destructive"
+    - "non-destructive"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)-8s | %(name)s — %(message)s"
+
+measurements:
+  fields:
+    - brix
+    - ph
+    - texture
+    - weight_loss
+    - ripeness_index
+  # Expected biological ranges for validation
+  expected_ranges:
+    brix:           [0.0, 30.0]
+    ph:             [3.0, 7.0]
+    texture:        [0.0, 100.0]
+    weight_loss:    [0.0, 50.0]
+    ripeness_index: [0.0, 10.0]
+
+target:
+  field: "days_remaining"          # Regression target — predicted by the model
+  max_shelf_life_days:
+    ambient:    7                  # Typical ambient shelf life (days)
+    controlled: 21                 # Typical cold-storage shelf life (days)
+
+image_model:
+  backbone: "efficientnet_b0"      # Pretrained CNN used for image feature extraction
+  image_size: 224                  # Input resolution (pixels)
+  output_dim: 256                  # Size of the image feature embedding vector
+  freeze_base: true                # Freeze pretrained layers; train projection head only
+  dropout: 0.3
+
+tabular_model:
+  output_dim: 128                  # Size of the tabular feature embedding vector
+  hidden_dim: 128                  # Width of the two hidden MLP layers
+  dropout: 0.3
+  embedding_dim: 4                 # Embedding size for each categorical feature
+  numerical_cols:                  # Must match DataFrame column names exactly
+    - Temperature
+    - Humidity
+    - Brix Mean
+    - Brix Min
+    - Brix Max
+    - pH Mean
+    - pH Min
+    - pH Max
+    - Texture Mean
+    - Texture Min
+    - Texture Max
+    - Weight Loss Mean
+    - Weight Loss Min
+    - Weight Loss Max
+    - Ripeness Index Mean
+    - Ripeness Index Min
+    - Ripeness Index Max
+
+

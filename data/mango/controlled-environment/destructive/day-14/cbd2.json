@@ -1,0 +1,38 @@
+{
+  "environment": "controlled",
+  "temperature": 4.7,
+  "humidity": 86.0,
+  "light_type": "none",
+  "date_started": "2026-05-30",
+  "day_index": 14,
+  "days_remaining": 7,
+  "brix": [
+    17.77,
+    17.74,
+    16.75
+  ],
+  "ph": [
+    4.31,
+    4.06,
+    4.18
+  ],
+  "texture": [
+    18.03,
+    20.6,
+    19.76
+  ],
+  "weight_loss": [
+    10.27,
+    10.15,
+    9.58
+  ],
+  "ripeness_index": [
+    6.28,
+    6.45,
+    6.55
+  ],
+  "images": [
+    ".\\data\\mango\\controlled-environment\\non-destructive\\day-14\\cbd2img1d14.png",
+    ".\\data\\mango\\controlled-environment\\non-destructive\\day-14\\cbd2img2d14.png"
+  ]
+}

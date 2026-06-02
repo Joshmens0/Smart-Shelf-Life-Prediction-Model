@@ -1,0 +1,18 @@
+{
+  "environment": null,
+  "temperature": null,
+  "humidity": null,
+  "light_type": null,
+  "date_started": null,
+  "day_index": null,
+  "brix": [],
+  "ph": [],
+  "days_remaining": 14,
+  "texture": [],
+  "weight_loss": [],
+  "ripeness_index": [],
+  "images": [
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aa1td2.png",
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aa2td2.png"
+  ]
+}

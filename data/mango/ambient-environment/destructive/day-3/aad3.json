@@ -1,0 +1,38 @@
+{
+  "environment": "ambient",
+  "temperature": 27.2,
+  "humidity": 61.8,
+  "light_type": "fluorescent",
+  "date_started": "2026-05-19",
+  "day_index": 3,
+  "days_remaining": 4,
+  "brix": [
+    13.41,
+    14.7,
+    14.11
+  ],
+  "ph": [
+    4.63,
+    4.73,
+    4.74
+  ],
+  "texture": [
+    29.48,
+    29.1,
+    30.44
+  ],
+  "weight_loss": [
+    11.91,
+    11.96,
+    12.27
+  ],
+  "ripeness_index": [
+    4.53,
+    4.72,
+    4.19
+  ],
+  "images": [
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-3\\aad3img1d3.png",
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-3\\aad3img2d3.png"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "environment":null,
+  "temperature":null,
+  "humidity":null,
+  "light_type":null,
+  "date_started":null,
+  "day_index":null,
+  "days_remaining": 14,
+  "brix":[],
+  "ph":[],
+  "texture":[],
+  "weight_loss":[],
+  "ripeness_index":[],
+  "images":[]
+}
+
+
+
+
+
