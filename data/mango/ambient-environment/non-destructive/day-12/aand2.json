@@ -7,29 +7,29 @@
   "day_index": 12,
   "days_remaining": 0,
   "brix": [
-    21.89,
-    22.66,
-    21.29
+    16.39,
+    17.16,
+    15.79
   ],
   "ph": [
-    3.39,
-    3.4,
-    3.4
+    5.09,
+    5.1,
+    5.1
   ],
   "texture": [
-    4.29,
-    5.84,
-    4.38
+    7.29,
+    8.84,
+    7.38
   ],
   "weight_loss": [
-    28.53,
-    28.47,
-    28.42
+    18.53,
+    18.47,
+    18.42
   ],
   "ripeness_index": [
-    8.85,
-    9.08,
-    9.03
+    4.85,
+    5.08,
+    5.03
   ],
   "images": [
     ".\\data\\mango\\ambient-environment\\non-destructive\\day-12\\aand2img1d12.png",

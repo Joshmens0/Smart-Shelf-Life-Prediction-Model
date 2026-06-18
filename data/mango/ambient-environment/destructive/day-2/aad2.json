@@ -1,18 +1,38 @@
 {
-  "environment": null,
-  "temperature": null,
-  "humidity": null,
-  "light_type": null,
-  "date_started": null,
-  "day_index": null,
-  "brix": [],
-  "ph": [],
-  "days_remaining": 14,
-  "texture": [],
-  "weight_loss": [],
-  "ripeness_index": [],
+  "environment": "ambient",
+  "temperature": 29.5,
+  "humidity": 65.7,
+  "light_type": "natural",
+  "date_started": "2026-05-18",
+  "day_index": 2,
+  "days_remaining": 5,
+  "brix": [
+    10.8,
+    10.13,
+    10.06
+  ],
+  "ph": [
+    3.8,
+    3.95,
+    4.0
+  ],
+  "texture": [
+    59.12,
+    57.68,
+    58.96
+  ],
+  "weight_loss": [
+    5.74,
+    5.18,
+    5.71
+  ],
+  "ripeness_index": [
+    2.36,
+    1.85,
+    2.28
+  ],
   "images": [
-    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aa1td2.png",
-    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aa2td2.png"
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aad2img1d2.png",
+    ".\\data\\mango\\ambient-environment\\non-destructive\\day-2\\aad2img2d2.png"
   ]
 }

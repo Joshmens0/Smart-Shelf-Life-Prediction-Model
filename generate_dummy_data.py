@@ -131,21 +131,26 @@ def generate_measurements(day: int, env_key: str) -> dict:
     """
     Generate biologically plausible measurement values that change with time.
     
+    References for ripening standards:
+      1. National Mango Board (mango.org) - Brix and Firmness standards
+      2. Rooban et al. (2026) - pH and Soluble Solids progression
+      3. Kishore et al. (2017) - Weight loss and temperature effects
+    
     As a mango ripens:
-      - Brix (sugar) increases from ~8 to ~22
-      - pH decreases from ~5.5 to ~3.5
-      - Texture (firmness) decreases from ~50 N to ~5 N
-      - Weight loss increases from 0% to ~15-30%
-      - Ripeness index increases from ~1 to ~9
+      - Brix (sugar) increases from ~8.5 to ~16.5
+      - pH increases (acidity decreases) from ~3.4 to ~5.2
+      - Texture (firmness) decreases from ~80 N to ~8 N
+      - Weight loss increases to ~18% (ambient) or ~8% (controlled)
+      - Ripeness index increases from 1.0 to 5.0
     """
     max_life = ENVIRONMENTS[env_key]["max_shelf_life"]
     progress = min(day / max_life, 1.0)
 
-    brix_base      = 8.0 + progress * 14.0             # 8 → 22
-    ph_base        = 5.5 - progress * 2.0               # 5.5 → 3.5
-    texture_base   = 50.0 - progress * 45.0             # 50 → 5
-    wl_base        = progress * (15.0 if env_key.startswith("controlled") else 28.0)
-    ri_base        = 1.0 + progress * 8.0               # 1 → 9
+    brix_base      = 8.5 + progress * 8.0               # 8.5 → 16.5
+    ph_base        = 3.4 + progress * 1.8               # 3.4 → 5.2 (acidity decreases)
+    texture_base   = 80.0 - progress * 72.0             # 80 N → 8 N
+    wl_base        = progress * (8.0 if env_key.startswith("controlled") else 18.0)
+    ri_base        = 1.0 + progress * 4.0               # 1.0 → 5.0
 
     return {
         "brix":           _rand_measurements(brix_base,    0.8),

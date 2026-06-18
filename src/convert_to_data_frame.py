@@ -42,7 +42,7 @@ class ConvertToDataFrame(JsonFile):
                     'Day':                   day,
                     'Date':                  date,
                     'Image Path':            image,
-                    'Days Remaining':        days_remaining,
+                    'days_remaining':        days_remaining,
                     'Environment':           environment,
                     'Temperature':           temperature,
                     'Humidity':              humidity,

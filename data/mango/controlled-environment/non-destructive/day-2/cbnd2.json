@@ -7,29 +7,29 @@
   "day_index": 2,
   "days_remaining": 19,
   "brix": [
-    9.91,
-    8.92,
-    9.29
+    9.84,
+    8.85,
+    9.22
   ],
   "ph": [
-    5.27,
-    5.2,
-    5.44
+    3.54,
+    3.47,
+    3.7
   ],
   "texture": [
-    47.14,
-    45.93,
-    47.37
+    74.57,
+    73.35,
+    74.8
   ],
   "weight_loss": [
-    1.72,
-    1.33,
-    1.21
+    1.05,
+    0.67,
+    0.55
   ],
   "ripeness_index": [
-    1.71,
-    1.89,
-    1.62
+    1.33,
+    1.51,
+    1.24
   ],
   "images": [
     ".\\data\\mango\\controlled-environment\\non-destructive\\day-2\\cbnd2img1d2.png",

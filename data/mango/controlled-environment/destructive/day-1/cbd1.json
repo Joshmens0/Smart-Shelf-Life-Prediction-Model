@@ -1,20 +1,38 @@
 {
-  "environment":null,
-  "temperature":null,
-  "humidity":null,
-  "light_type":null,
-  "date_started":null,
-  "day_index":null,
-  "days_remaining": 14,
-  "brix":[],
-  "ph":[],
-  "texture":[],
-  "weight_loss":[],
-  "ripeness_index":[],
-  "images":[]
+  "environment": "controlled",
+  "temperature": 9.8,
+  "humidity": 91.4,
+  "light_type": "dim-LED",
+  "date_started": "2026-05-17",
+  "day_index": 1,
+  "days_remaining": 20,
+  "brix": [
+    9.55,
+    9.48,
+    9.26
+  ],
+  "ph": [
+    3.35,
+    3.38,
+    3.4
+  ],
+  "texture": [
+    75.87,
+    77.22,
+    76.67
+  ],
+  "weight_loss": [
+    0.16,
+    -0.01,
+    0.88
+  ],
+  "ripeness_index": [
+    1.1,
+    1.1,
+    1.35
+  ],
+  "images": [
+    ".\\data\\mango\\controlled-environment\\non-destructive\\day-1\\cbd1img1d1.png",
+    ".\\data\\mango\\controlled-environment\\non-destructive\\day-1\\cbd1img2d1.png"
+  ]
 }
-
-
-
-
-
