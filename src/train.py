@@ -29,7 +29,7 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader, random_split
 
-from fusion_model import MultimodalDataset, MultimodalShelfLifeModel, collate_multimodal
+from fusion_model import MultimodalDataset, MultimodalShelfLifeModel, TeacherMultimodalModel, collate_multimodal
 from image_backbone import get_eval_transforms, get_train_transforms
 
 logger = logging.getLogger(__name__)
@@ -67,23 +67,42 @@ def compute_rmse(preds: torch.Tensor, targets: torch.Tensor) -> float:
 # ------------------------------------------------------------------
 
 def train_one_epoch(
-    model:      MultimodalShelfLifeModel,
+    student:    MultimodalShelfLifeModel,
+    teacher:    TeacherMultimodalModel,
     loader:     DataLoader,
     optimizer:  torch.optim.Optimizer,
     criterion:  nn.Module,
     device:     torch.device,
 ) -> float:
     """Runs one full training epoch. Returns average training loss."""
-    model.train()
+    student.train()
+    teacher.train()
     total_loss = 0.0
 
-    for images, tabulars, labels in loader:
+    # Distillation alpha weight
+    ALPHA = 0.5
+
+    for images, tabulars, labels, privileged in loader:
         images = images.to(device)
         labels = labels.to(device)
+        privileged = privileged.to(device)
 
         optimizer.zero_grad()
-        predictions = model(images, tabulars)
-        loss        = criterion(predictions, labels)
+
+        # Forward passes
+        preds_teacher = teacher(images, tabulars, privileged)
+        preds_student = student(images, tabulars)
+
+        # Loss calculations
+        loss_teacher = criterion(preds_teacher, labels)
+        
+        # Student loss: combination of ground truth MSE + distillation MSE (vs teacher)
+        loss_gt = criterion(preds_student, labels)
+        loss_distill = criterion(preds_student, preds_teacher.detach())  # detach so teacher gradients don't flow through student distill loss
+        loss_student = (1.0 - ALPHA) * loss_gt + ALPHA * loss_distill
+
+        # Joint optimization
+        loss = loss_teacher + loss_student
         loss.backward()
         optimizer.step()
 
@@ -94,31 +113,43 @@ def train_one_epoch(
 
 @torch.no_grad()
 def evaluate(
-    model:     MultimodalShelfLifeModel,
+    student:   MultimodalShelfLifeModel,
+    teacher:   TeacherMultimodalModel,
     loader:    DataLoader,
     criterion: nn.Module,
     device:    torch.device,
 ) -> tuple[float, float, float]:
     """
-    Evaluates the model on a DataLoader.
+    Evaluates the Student model on a DataLoader (with Teacher reference for loss).
 
     Returns:
         (avg_loss, mae, rmse)
     """
-    model.eval()
+    student.eval()
+    teacher.eval()
     total_loss  = 0.0
     all_preds   = []
     all_targets = []
 
-    for images, tabulars, labels in loader:
+    ALPHA = 0.5
+
+    for images, tabulars, labels, privileged in loader:
         images = images.to(device)
         labels = labels.to(device)
+        privileged = privileged.to(device)
 
-        preds = model(images, tabulars)
-        loss  = criterion(preds, labels)
+        preds_teacher = teacher(images, tabulars, privileged)
+        preds_student = student(images, tabulars)
+
+        # Calculate joint validation loss
+        loss_teacher = criterion(preds_teacher, labels)
+        loss_gt = criterion(preds_student, labels)
+        loss_distill = criterion(preds_student, preds_teacher)
+        loss_student = (1.0 - ALPHA) * loss_gt + ALPHA * loss_distill
+        loss = loss_teacher + loss_student
 
         total_loss  += loss.item() * len(labels)
-        all_preds.append(preds.cpu())
+        all_preds.append(preds_student.cpu())
         all_targets.append(labels.cpu())
 
     all_preds   = torch.cat(all_preds)
@@ -196,26 +227,43 @@ def main() -> None:
         num_workers=0,
     )
 
-    # ── Model ─────────────────────────────────────────────────────
+    # ── Models ─────────────────────────────────────────────────────
     img_cfg = config['image_model']
     tab_cfg = config['tabular_model']
 
-    model = MultimodalShelfLifeModel(
+    student = MultimodalShelfLifeModel(
         img_output_dim=img_cfg['output_dim'],
         tab_output_dim=tab_cfg['output_dim'],
         freeze_backbone=img_cfg['freeze_base'],
         dropout_fusion=0.3,
     ).to(device)
 
+    teacher = TeacherMultimodalModel(
+        img_output_dim=img_cfg['output_dim'],
+        tab_output_dim=tab_cfg['output_dim'],
+        bio_output_dim=64,
+        freeze_backbone=img_cfg['freeze_base'],
+        dropout_fusion=0.3,
+    ).to(device)
+
     logger.info(
-        "Model ready — trainable params: %d / %d.",
-        model.trainable_params(), model.total_params(),
+        "Student ready — trainable params: %d / %d.",
+        student.trainable_params(), student.total_params(),
+    )
+    logger.info(
+        "Teacher ready — trainable params: %d / %d.",
+        teacher.trainable_params(), teacher.total_params(),
     )
 
     # ── Loss, optimiser, scheduler ────────────────────────────────
     criterion = nn.MSELoss()
+    
+    # Joint parameter optimization
+    joint_params = list(filter(lambda p: p.requires_grad, student.parameters())) + \
+                   list(filter(lambda p: p.requires_grad, teacher.parameters()))
+
     optimizer = torch.optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()),
+        joint_params,
         lr=1e-3,
         weight_decay=1e-4,
     )
@@ -237,8 +285,8 @@ def main() -> None:
     for epoch in range(1, EPOCHS + 1):
         t0 = time.time()
 
-        train_loss          = train_one_epoch(model, train_loader, optimizer, criterion, device)
-        val_loss, mae, rmse = evaluate(model, val_loader, criterion, device)
+        train_loss          = train_one_epoch(student, teacher, train_loader, optimizer, criterion, device)
+        val_loss, mae, rmse = evaluate(student, teacher, val_loader, criterion, device)
 
         scheduler.step(val_loss)
         elapsed = time.time() - t0
@@ -257,8 +305,9 @@ def main() -> None:
             best_val_loss = val_loss
             no_improve    = 0
             ckpt_path     = CKPT_DIR / 'best_model.pt'
-            torch.save(model.state_dict(), ckpt_path)
-            logger.info("New best model saved → %s", ckpt_path)
+            # Save only the student model weights (used at inference)
+            torch.save(student.state_dict(), ckpt_path)
+            logger.info("New best student model saved → %s", ckpt_path)
         else:
             no_improve += 1
             if no_improve >= PATIENCE:
@@ -269,7 +318,7 @@ def main() -> None:
                 break
 
     print(f"\nTraining complete. Best validation loss: {best_val_loss:.4f}")
-    print(f"Best model checkpoint: {CKPT_DIR / 'best_model.pt'}")
+    print(f"Best model checkpoint (Student): {CKPT_DIR / 'best_model.pt'}")
 
 
 if __name__ == '__main__':

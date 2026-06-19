@@ -52,91 +52,87 @@ This document serves as your complete guide and speaker notes for your class pre
 
 ---
 
-## ── Slide 3: Model Architecture ──
+## ── Slide 3: LUPI Teacher-Student Architecture ──
 
 ### 📊 Slide Layout
 
 ```mermaid
 graph TD
     %% Inputs
-    subgraph Input_Data [Inference-Time Inputs]
+    subgraph Standard_Inputs [Non-Destructive Inputs (Student & Teacher)]
         Img[RGB Image <br> 3 x 224 x 224]
         Tab[Tabular Sensor Data <br> Temp, Humidity, Env]
     end
 
-    %% Image Branch
-    subgraph Image_Branch [Visual Feature Extractor]
-        EF[EfficientNet-B0 <br> Pretrained on ImageNet]
-        Freeze["Base Layers Frozen <br> (No gradient updates)"]
-        EF --- Freeze
-        ProjH["Projection Head <br> Linear 1280 -> 256 + ReLU"]
-        Freeze --> ProjH
+    subgraph Privileged_Inputs [Privileged Input (Teacher Only)]
+        Bio[Biochemical Data <br> Brix, pH, Texture]
     end
 
-    %% Tabular Branch
-    subgraph Tabular_Branch [Sensor Feature MLP]
-        Enc["Encoder <br> Categorical Embeddings <br> (Env -> 4D Vector)"]
-        MLP["Tabular MLP <br> 2 Hidden Layers (128) <br> BatchNorm + ReLU + Dropout (0.3)"]
-        Enc --> MLP
-        ProjTab["Projection Layer <br> Linear 128 -> 64 + ReLU"]
-        MLP --> ProjTab
-    end
-
-    %% Fusion and Output
-    subgraph Fusion_Head [Multimodal Fusion]
-        Concat["Concatenate Embeddings <br> (256-dim + 64-dim = 320-dim)"]
-        FC1["Linear 320 -> 128 <br> BatchNorm + ReLU + Dropout (0.3)"]
-        FC2["Linear 128 -> 32 <br> BatchNorm + ReLU + Dropout (0.2)"]
-        Out["Linear 32 -> 1 <br> (Continuous Regression)"]
+    %% Student Model
+    subgraph Student_Model [Student Model (Deployed)]
+        S_EF[EfficientNet-B0]
+        S_MLP[Tabular MLP]
+        S_Fusion[Concat 320]
+        S_Head[Regression Head]
         
-        Concat --> FC1
-        FC1 --> FC2
-        FC2 --> Out
+        S_EF --- S_MLP --> S_Fusion --> S_Head --> S_Pred[Student Prediction: ŷ_student]
+    end
+
+    %% Teacher Model
+    subgraph Teacher_Model [Teacher Model (Training Only)]
+        T_EF[EfficientNet-B0]
+        T_MLP[Tabular MLP]
+        T_Bio[Privileged Bio MLP]
+        T_Fusion[Concat 384]
+        T_Head[Regression Head]
+        
+        T_EF --- T_MLP --- T_Bio --> T_Fusion --> T_Head --> T_Pred[Teacher Prediction: ŷ_teacher]
     end
 
     %% Connections
-    Img --> EF
-    Tab --> Enc
-    ProjH --> Concat
-    ProjTab --> Concat
-    Out --> Target[days_remaining]
+    Img --> S_EF
+    Img --> T_EF
+    Tab --> S_MLP
+    Tab --> T_MLP
+    Bio --> T_Bio
 
-    %% Color Styling
-    style EF fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#fff
-    style MLP fill:#27AE60,stroke:#2ECC71,stroke-width:2px,color:#fff
-    style Concat fill:#D35400,stroke:#E67E22,stroke-width:2px,color:#fff
-    style Out fill:#C0392B,stroke:#E74C3C,stroke-width:2px,color:#fff
+    %% Distillation
+    T_Pred -. "Distills Knowledge <br> (Student mimics Teacher)" .-> S_Pred
+    
+    style Student_Model fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#fff
+    style Teacher_Model fill:#27AE60,stroke:#2ECC71,stroke-width:2px,color:#fff
+    style S_Pred fill:#C0392B,stroke:#E74C3C,stroke-width:2px,color:#fff
+    style T_Pred fill:#D35400,stroke:#E67E22,stroke-width:2px,color:#fff
 ```
 
 ### 🗣️ Speaker Notes
-> "This diagram details our deep learning architecture. It is a late-fusion dual-branch network.
+> "This diagram details our **Learning Using Privileged Information (LUPI)** architecture. It consists of two parallel models trained jointly: a **Teacher Model** and a **Student Model**.
 > 
-> On the left is the **Visual Branch**, which extracts features from a $224 \times 224$ RGB image using an EfficientNet-B0 backbone. We project these high-level features down to a 256-dimensional vector.
+> The Student model on the left represents the deployed code. It takes only the non-destructive inputs: the RGB photo and temperature/humidity sensors. It maps these to a single scalar prediction.
 > 
-> On the right is the **Tabular Branch**, which processes temperature, humidity, and environment settings. We use learned embeddings for categorical columns and pass them through a Multi-Layer Perceptron, projecting them to a 64-dimensional vector.
+> The Teacher model on the right exists only during training. It has access to the standard inputs PLUS the privileged biochemical variables (Brix, pH, Texture). It uses a separate biochemical MLP branch to fuse these chemical states into its final prediction.
 > 
-> Finally, we concatenate these embeddings into a 320-dimensional joint representation and pass it to the **Fusion Head** for the final prediction of `days_remaining`."
+> During training, we force the Student's predictions to mimic the Teacher's highly informed predictions, distilling this chemical understanding into the Student. At deployment, we throw away the Teacher, leaving a lightweight, non-destructive Student."
 
 ---
 
-## ── Slide 3.5: The "Information Funnel" (How 3 Inputs Map to 1 Output) ──
+## ── Slide 3.5: The LUPI Concept & Distillation Loss ──
 
 ### 📊 Slide Layout
-*   **The Dimensionality Problem**: How do we map a high-dimensional image ($150,528$ pixels) + $3$ environmental numbers to $1$ final output (`days_remaining`)?
-*   **The Squeezing Process**:
-    1.  **Visual Squeeze**: Convolutional filters scan the photo to compress $150,528$ pixels down to **$256$ visual feature values** (color, textures, decay spots).
-    2.  **Telemetry Squeeze**: The Tabular MLP processes temperature, humidity, and environment category down to **$64$ environmental severity values**.
-    3.  **Late Fusion**: We concatenate them side-by-side ($256 + 64 = 320$ numbers).
-    4.  **Regression Funnel**: The Fusion Head funnels these $320$ joint variables down step-by-step:
-        $$\text{Linear}(320 \to 128) \longrightarrow \text{Linear}(128 \to 32) \longrightarrow \text{Linear}(32 \to 1)$$
-*   **The Result**: The network performs weighted matrix calculations on the inputs to project a single continuous scalar representing estimated remaining shelf-life.
+*   **The LUPI Principle**: Learning Using Privileged Information (Vapnik et al.). We use high-fidelity laboratory data (biochemistry) during training to make a student model smarter at inference.
+*   **Joint Optimization**:
+    *   We optimize both networks together in a single loop using a **Combined Loss Function**:
+        $$\text{Loss}_{\text{Teacher}} = \text{MSE}(\hat{y}_{\text{teacher}}, y_{\text{true}})$$
+        $$\text{Loss}_{\text{Student}} = (1 - \alpha) \text{MSE}(\hat{y}_{\text{student}}, y_{\text{true}}) + \alpha \text{MSE}(\hat{y}_{\text{student}}, \hat{y}_{\text{teacher}})$$
+    *   Where $\alpha = 0.5$ balances matching the true label vs. mimicking the Teacher's prediction.
+*   **Why Distillation Works**: The Teacher's predictions contain **soft probabilities** and structural patterns (representing decay states) that are easier for the Student to learn from than hard numeric days-remaining labels alone.
 
 ### 🗣️ Speaker Notes
-> "A common question is: how does a large photo and a few sensor numbers compress mathematically to predict just one number? This is done through an information funnel. 
+> "To train the Student, we use joint Knowledge Distillation. The Teacher model is optimized to predict days remaining using its full access to biochemical data. 
 > 
-> The raw inputs start extremely high-dimensional, particularly the image, which contains over 150,000 pixel values. The model uses its two parallel branches as feature compressors, reducing the image to 256 numbers and the tabular sensors to 64. 
+> The Student model's loss is a combination of two targets: half of its loss goes towards predicting the true remaining days, and the other half is a distillation loss that penalizes it if it diverges from the Teacher's predictions. 
 > 
-> After merging these into a list of 320 numbers, the final regression head acts like a mathematical funnel, shrinking the representation from 320 to 128, then to 32, and finally to 1 single scalar value representing our predicted days remaining. During training, the network adapts the coefficients of these equations so that the final estimated value matches the true remaining days."
+> This is powerful because the Teacher's predictions encode soft details about fruit degradation speed that are not captured by a simple remaining-days label. By mimicking the Teacher, the Student learns visual and temperature proxies for the underlying chemistry. In production, the Teacher is completely discarded."
 
 ---
 
@@ -352,5 +348,5 @@ Here are typical questions professors ask during machine learning presentations,
 ### Q6: Can you explain the data leakage issue you identified in your critical evaluation, and how you would solve it?
 *   **Answer**: *"In the initial code, the dataset was split into train and validation sets using flat chronological row indexing. However, because we capture multiple photos of the same mango sample from different angles on a single day, this caused **data leakage**. Images of the exact same fruit under the exact same conditions on the exact same day were split across both training and validation sets. To solve this, we must use a **group-based split** (like `GroupKFold` from scikit-learn). We can parse the filename to extract the unique fruit Sample ID (e.g., sample `aad1` or `cbnd3`) and ensure that the entire lifecycle of a single fruit is kept together in either the train set or the validation set, never both."*
 
-### Q7: If the Brix, pH, and texture readings are so important for shelf-life, why are they not inputs to the model at prediction time?
-*   **Answer**: *"Brix, pH, and penetrometer firmness are destructive tests—you have to crush the mango or insert probe needles to measure them, which makes the fruit unsellable. Therefore, we cannot ask a retailer or consumer to provide these values during inference. Instead, we use these values during research to calculate the ground-truth `days_remaining` label. The model learns to find visual proxies (peel color, black spot area) and physical proxies (sensor temperatures and humidity) that correlate with those underlying biochemical changes, allowing non-destructive estimation in production."*
+### Q7: If the Brix, pH, and texture readings are so important for shelf-life, how does the model utilize them if they are ignored at prediction time?
+*   **Answer**: *"Brix, pH, and penetrometer firmness are destructive laboratory measurements—you have to crush the fruit to measure them, which is unusable for a consumer app. However, we utilize them during training through the **Learning Using Privileged Information (LUPI)** framework. We train a **Teacher Model** that has access to both non-destructive inputs and this privileged biochemical data. Simultaneously, we train a **Student Model** that only has access to non-destructive inputs. We apply **Knowledge Distillation Loss** which forces the Student model to mimic the Teacher's predictions. At inference, we discard the Teacher model and deploy only the Student. This lets the Student benefit from the biochemical knowledge during training without needing any biochemical inputs in production."*
