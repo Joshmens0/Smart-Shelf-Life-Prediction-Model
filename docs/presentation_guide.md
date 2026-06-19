@@ -119,6 +119,27 @@ graph TD
 
 ---
 
+## ── Slide 3.5: The "Information Funnel" (How 3 Inputs Map to 1 Output) ──
+
+### 📊 Slide Layout
+*   **The Dimensionality Problem**: How do we map a high-dimensional image ($150,528$ pixels) + $3$ environmental numbers to $1$ final output (`days_remaining`)?
+*   **The Squeezing Process**:
+    1.  **Visual Squeeze**: Convolutional filters scan the photo to compress $150,528$ pixels down to **$256$ visual feature values** (color, textures, decay spots).
+    2.  **Telemetry Squeeze**: The Tabular MLP processes temperature, humidity, and environment category down to **$64$ environmental severity values**.
+    3.  **Late Fusion**: We concatenate them side-by-side ($256 + 64 = 320$ numbers).
+    4.  **Regression Funnel**: The Fusion Head funnels these $320$ joint variables down step-by-step:
+        $$\text{Linear}(320 \to 128) \longrightarrow \text{Linear}(128 \to 32) \longrightarrow \text{Linear}(32 \to 1)$$
+*   **The Result**: The network performs weighted matrix calculations on the inputs to project a single continuous scalar representing estimated remaining shelf-life.
+
+### 🗣️ Speaker Notes
+> "A common question is: how does a large photo and a few sensor numbers compress mathematically to predict just one number? This is done through an information funnel. 
+> 
+> The raw inputs start extremely high-dimensional, particularly the image, which contains over 150,000 pixel values. The model uses its two parallel branches as feature compressors, reducing the image to 256 numbers and the tabular sensors to 64. 
+> 
+> After merging these into a list of 320 numbers, the final regression head acts like a mathematical funnel, shrinking the representation from 320 to 128, then to 32, and finally to 1 single scalar value representing our predicted days remaining. During training, the network adapts the coefficients of these equations so that the final estimated value matches the true remaining days."
+
+---
+
 ## ── Slide 4: Why We Chose These Model Parameters ──
 
 ### 📊 Slide Layout
