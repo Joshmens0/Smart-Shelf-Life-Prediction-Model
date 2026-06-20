@@ -38,9 +38,12 @@ logger = logging.getLogger(__name__)
 # Config
 # ------------------------------------------------------------------
 
-CONFIG_PATH = Path('config.yaml')
-DATA_CSV    = Path('preprocessed_data.csv')
-CKPT_DIR    = Path('checkpoints')
+_SCRIPT_DIR = Path(__file__).parent.absolute()
+_ROOT_DIR   = _SCRIPT_DIR if (_SCRIPT_DIR / 'config.yaml').exists() else _SCRIPT_DIR.parent
+
+CONFIG_PATH = _ROOT_DIR / 'config.yaml'
+DATA_CSV    = _ROOT_DIR / 'preprocessed_data.csv'
+CKPT_DIR    = _ROOT_DIR / 'checkpoints'
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -235,6 +238,7 @@ def main() -> None:
         img_output_dim=img_cfg['output_dim'],
         tab_output_dim=tab_cfg['output_dim'],
         freeze_backbone=img_cfg['freeze_base'],
+        unfreeze_last_blocks=True,
         dropout_fusion=0.3,
     ).to(device)
 
@@ -243,6 +247,7 @@ def main() -> None:
         tab_output_dim=tab_cfg['output_dim'],
         bio_output_dim=64,
         freeze_backbone=img_cfg['freeze_base'],
+        unfreeze_last_blocks=True,
         dropout_fusion=0.3,
     ).to(device)
 
@@ -258,15 +263,37 @@ def main() -> None:
     # ── Loss, optimiser, scheduler ────────────────────────────────
     criterion = nn.MSELoss()
     
-    # Joint parameter optimization
-    joint_params = list(filter(lambda p: p.requires_grad, student.parameters())) + \
-                   list(filter(lambda p: p.requires_grad, teacher.parameters()))
+    # Differential parameter optimization groups
+    backbone_params = []
+    head_params = []
 
-    optimizer = torch.optim.Adam(
-        joint_params,
-        lr=1e-3,
-        weight_decay=1e-4,
+    for name, param in student.named_parameters():
+        if not param.requires_grad:
+            continue
+        if 'image_branch.backbone.features' in name:
+            backbone_params.append(param)
+        else:
+            head_params.append(param)
+
+    for name, param in teacher.named_parameters():
+        if not param.requires_grad:
+            continue
+        if 'image_branch.backbone.features' in name:
+            backbone_params.append(param)
+        else:
+            head_params.append(param)
+
+    logger.info(
+        "Optimizer setup: %d backbone parameters (lr=1e-5), %d head parameters (lr=1e-3).",
+        sum(p.numel() for p in backbone_params),
+        sum(p.numel() for p in head_params),
     )
+
+    optimizer = torch.optim.Adam([
+        {'params': head_params, 'lr': 1e-3},
+        {'params': backbone_params, 'lr': 1e-5}
+    ], weight_decay=1e-4)
+
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.5, patience=5,
     )

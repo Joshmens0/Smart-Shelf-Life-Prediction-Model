@@ -32,12 +32,34 @@ from a **photo + two sensor readings alone**.
 
 ---
 
-## Model Architecture
+## Model Architecture (LUPI Framework)
 
+The project implements a **Learning Using Privileged Information (LUPI)** framework using a joint Teacher-Student distillation network.
+
+### Training Flow (Teacher & Student)
+```
+          ┌─────────────────────────────────────────────────────────────┐
+          │                    TEACHER MODEL (LUPI)                     │
+          │  Image + Tabular (Temp, Humid, Env) + Privileged (Bio Data) │
+          └──────────────────────────────┬──────────────────────────────┘
+                                         │
+                                 Distillation Loss
+                                 (mimics predictions)
+                                         ▼
+          ┌─────────────────────────────────────────────────────────────┐
+          │                  STUDENT MODEL (DEPLOYED)                   │
+          │            Image + Tabular (Temp, Humid, Env)               │
+          └──────────────────────────────┬──────────────────────────────┘
+                                         │
+                                         ▼
+                                  days_remaining
+```
+
+### Deployed Inference Flow (Student Only)
 ```
 Image (3×224×224) ──► EfficientNet-B0 ──► 256-dim embedding ──┐
                        (pretrained, frozen)                     │
-                                                               cat(320) ──► Fusion Head ──► days_remaining
+                                                                cat(320) ──► Fusion Head ──► days_remaining
 [Temperature, Humidity,               ──► MLP ──► 64-dim  ────┘
  Environment]                            (3-layer)
 ```
@@ -46,16 +68,20 @@ Image (3×224×224) ──► EfficientNet-B0 ──► 256-dim embedding ──
 
 | Module | File | Description |
 |---|---|---|
-| **Image Backbone** | `src/image_backbone.py` | EfficientNet-B0 pretrained on ImageNet. Frozen conv layers + trainable projection head → 256-dim |
-| **Tabular Branch** | `src/tabular_branch.py` | Categorical embedding for Environment + numerical passthrough for Temp/Humidity → MLP → 64-dim |
-| **Fusion Model** | `src/fusion_model.py` | Concatenates both embeddings (320-dim) → 3-layer regression head → `days_remaining` |
+| **Student Model** | `src/fusion_model.py` | `MultimodalShelfLifeModel` — Fuses visual (256) and tabular (64) embeddings to predict `days_remaining` directly. Used for both training and deployed inference. |
+| **Teacher Model** | `src/fusion_model.py` | `TeacherMultimodalModel` — Parallel training network. Fuses visual (256), tabular (64), and privileged biochemical (64) embeddings to predict `days_remaining`. Discarded after training. |
+| **Privileged Branch** | `src/fusion_model.py` | Small MLP mapping the 3-dim biochemical vector (Brix, pH, Texture) to a 64-dim embedding. Exists only in the Teacher model. |
 
 ### Parameter Budget
-| | Count |
-|---|---|
-| Total parameters | 4,423,689 |
-| Trainable (heads only) | 416,141 |
-| Frozen (EfficientNet backbone) | 4,007,548 |
+
+The parameter budget depends on whether visual backbone fine-tuning is enabled:
+
+*   **Baseline (Fully Frozen Visual Backbone)**:
+    *   Student: **`416,141`** trainable parameters, **`4,007,548`** frozen parameters.
+    *   Teacher: **`424,717`** trainable parameters, **`4,007,548`** frozen parameters.
+*   **Optimized (Partial Visual Backbone Fine-Tuning - Blocks 7 & 8 Unfrozen)**:
+    *   Student: **`1,545,533`** trainable parameters, **`2,878,156`** frozen parameters.
+    *   Teacher: **`1,554,109`** trainable parameters, **`2,878,156`** frozen parameters.
 
 ---
 
@@ -173,30 +199,32 @@ print(f"Estimated shelf life: {days:.1f} day(s)")
 
 ## Training Details
 
-| Setting | Value |
-|---|---|
-| Loss | MSE |
-| Optimiser | Adam (lr=1e-3, weight_decay=1e-4) |
-| Scheduler | ReduceLROnPlateau (factor=0.5, patience=5) |
-| Early stopping | patience=10 epochs |
-| Batch size | 8 |
-| Train / Val split | 80 / 20 |
-| Backbone | EfficientNet-B0 (frozen) |
-| Metrics reported | MAE (days), RMSE (days) |
+| Setting | Baseline (Fully Frozen) | Optimized (Partial Fine-Tuning) |
+|---|---|---|
+| **Framework** | LUPI Distillation | LUPI Distillation |
+| **Backbone** | EfficientNet-B0 (Frozen) | EfficientNet-B0 (Blocks 7 & 8 Unfrozen) |
+| **Augmentations** | Flips, Jitter | Crop, Rotation, Flips, Jitter |
+| **Optimizer** | Adam (lr=1e-3) | Two-group Adam (Heads: lr=1e-3, Backbone: lr=1e-5) |
+| **Loss** | Combined MSE ($\alpha = 0.5$) | Combined MSE ($\alpha = 0.5$) |
+| **Early Stopping** | patience=10 epochs | patience=10 epochs |
+| **Batch Size** | 8 | 8 |
+| **Train/Val Split** | 80 / 20 | 80 / 20 |
+| **Validation MAE** | **2.2241 days** | **2.6079 days** |
+| **Validation RMSE** | **2.4802 days** | **2.7726 days** |
+| **Validation R²** | **0.6259** | **0.5325** |
 
 ---
 
 ## Status
 
-> 🚧 **Under active development** — data collection and pipeline stage.
+> 🔄 **Active Development & Verification** — Pipeline complete, models verified.
 
 | Stage | Status |
 |---|---|
 | Data pipeline (loading, linking, CSV export) | ✅ Complete |
 | Image backbone (EfficientNet-B0) | ✅ Complete |
 | Tabular branch (sensor MLP) | ✅ Complete |
-| Fusion model | ✅ Complete |
-| Training loop + checkpointing | ✅ Complete |
-| Dataset collection (filling JSON files) | 🔄 In progress |
-| Model training & evaluation | ⏳ Pending data |
-| Inference API / deployment | ⏳ Planned |
+| Teacher-Student Distillation Model (LUPI) | ✅ Complete |
+| Joint training loop + distillation checkpointing | ✅ Complete |
+| Model training & evaluation validation | ✅ Complete |
+| Inference API / CLI prediction | ✅ Complete |

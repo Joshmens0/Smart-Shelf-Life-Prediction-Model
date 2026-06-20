@@ -49,11 +49,12 @@ def get_train_transforms() -> transforms.Compose:
     """
     Augmented transform pipeline for training.
 
-    Applies random flips and colour jitter to improve generalisation
-    on the relatively small mango dataset.
+    Applies random flips, cropping, rotation, and colour jitter to improve
+    generalisation on the relatively small mango dataset.
     """
     return transforms.Compose([
-        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+        transforms.RandomResizedCrop((IMAGE_SIZE, IMAGE_SIZE), scale=(0.8, 1.0)),
+        transforms.RandomRotation(degrees=15),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.3),
         transforms.ColorJitter(
@@ -160,6 +161,7 @@ class ImageBackbone(nn.Module):
         self,
         output_dim: int = 256,
         freeze_base: bool = True,
+        unfreeze_last_blocks: bool = True,
     ) -> None:
         super().__init__()
 
@@ -171,7 +173,16 @@ class ImageBackbone(nn.Module):
         if freeze_base:
             for param in base.features.parameters():
                 param.requires_grad = False
-            logger.info("ImageBackbone: pretrained feature layers are frozen.")
+            
+            # Unfreeze only the final deep layers (Block 7 & 8)
+            if unfreeze_last_blocks:
+                for param in base.features[7].parameters():
+                    param.requires_grad = True
+                for param in base.features[8].parameters():
+                    param.requires_grad = True
+                logger.info("ImageBackbone: base is frozen, but Block 7 & 8 are unfrozen.")
+            else:
+                logger.info("ImageBackbone: pretrained feature layers are frozen.")
 
         # Replace the default classifier with a projection head
         base.classifier = nn.Sequential(
@@ -184,8 +195,8 @@ class ImageBackbone(nn.Module):
         self.output_dim = output_dim
 
         logger.info(
-            "ImageBackbone initialised — output_dim=%d, freeze_base=%s.",
-            output_dim, freeze_base,
+            "ImageBackbone initialised — output_dim=%d, freeze_base=%s, unfreeze_last_blocks=%s.",
+            output_dim, freeze_base, unfreeze_last_blocks,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

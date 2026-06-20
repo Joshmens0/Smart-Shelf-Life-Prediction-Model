@@ -172,6 +172,7 @@ class MultimodalShelfLifeModel(nn.Module):
         img_output_dim:  int   = 256,
         tab_output_dim:  int   = 64,
         freeze_backbone: bool  = True,
+        unfreeze_last_blocks: bool = True,
         dropout_fusion:  float = 0.3,
     ) -> None:
         super().__init__()
@@ -180,6 +181,7 @@ class MultimodalShelfLifeModel(nn.Module):
         self.image_branch = ImageBackbone(
             output_dim=img_output_dim,
             freeze_base=freeze_backbone,
+            unfreeze_last_blocks=unfreeze_last_blocks,
         )
 
         # ── Tabular branch (sensor data only) ─────────────────────────
@@ -263,6 +265,7 @@ class TeacherMultimodalModel(nn.Module):
         tab_output_dim:  int = 64,
         bio_output_dim:  int = 64,
         freeze_backbone: bool = True,
+        unfreeze_last_blocks: bool = True,
         dropout_fusion:  float = 0.3,
     ) -> None:
         super().__init__()
@@ -271,6 +274,7 @@ class TeacherMultimodalModel(nn.Module):
         self.image_branch = ImageBackbone(
             output_dim=img_output_dim,
             freeze_base=freeze_backbone,
+            unfreeze_last_blocks=unfreeze_last_blocks,
         )
 
         # Tabular branch
@@ -401,5 +405,7 @@ if __name__ == '__main__':
     print(f"\nTeacher Output Shape  : {list(teacher_preds.shape)}")
     print(f"Teacher Predictions   : {teacher_preds.tolist()}")
 
-    print(f"\nStudent parameters: {student.total_params():,}")
-    print(f"Teacher parameters: {teacher.total_params():,}")
+    print(f"\nStudent total parameters: {student.total_params():,}")
+    print(f"Student trainable parameters: {student.trainable_params():,}")
+    print(f"Teacher total parameters: {teacher.total_params():,}")
+    print(f"Teacher trainable parameters: {teacher.trainable_params():,}")
