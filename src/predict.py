@@ -102,7 +102,15 @@ def main() -> None:
         img_output_dim=img_cfg["output_dim"],
         tab_output_dim=tab_cfg["output_dim"],
         freeze_backbone=img_cfg["freeze_base"],
+        unfreeze_last_blocks=img_cfg.get("unfreeze_last_blocks", True),  # Sync with training optimization
         dropout_fusion=0.0,  # No dropout at inference
+    )
+
+    # Print parameter information for verification
+    logger.info(
+        "Model parameters - Total: %s, Trainable: %s",
+        f"{model.total_params():,}",
+        f"{model.trainable_params():,}",
     )
 
     # Load checkpoint

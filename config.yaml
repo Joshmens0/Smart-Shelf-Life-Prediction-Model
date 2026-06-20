@@ -43,6 +43,7 @@ image_model:
   image_size: 224                  # Input resolution (pixels)
   output_dim: 256                  # Size of the image feature embedding vector
   freeze_base: true                # Freeze pretrained layers; train projection head only
+  unfreeze_last_blocks: true       # Unfreeze block 7 & 8 of backbone
   dropout: 0.3
 
 tabular_model:

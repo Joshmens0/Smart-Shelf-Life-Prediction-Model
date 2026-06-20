@@ -87,6 +87,7 @@ def main() -> None:
         img_output_dim=img_cfg['output_dim'],
         tab_output_dim=tab_cfg['output_dim'],
         freeze_backbone=img_cfg['freeze_base'],
+        unfreeze_last_blocks=img_cfg.get('unfreeze_last_blocks', True),  # Sync with training optimization
         dropout_fusion=0.0,  # No dropout for evaluation
     ).to(device)
 

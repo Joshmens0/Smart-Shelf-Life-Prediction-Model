@@ -238,7 +238,7 @@ def main() -> None:
         img_output_dim=img_cfg['output_dim'],
         tab_output_dim=tab_cfg['output_dim'],
         freeze_backbone=img_cfg['freeze_base'],
-        unfreeze_last_blocks=True,
+        unfreeze_last_blocks=img_cfg.get('unfreeze_last_blocks', True),
         dropout_fusion=0.3,
     ).to(device)
 
@@ -247,7 +247,7 @@ def main() -> None:
         tab_output_dim=tab_cfg['output_dim'],
         bio_output_dim=64,
         freeze_backbone=img_cfg['freeze_base'],
-        unfreeze_last_blocks=True,
+        unfreeze_last_blocks=img_cfg.get('unfreeze_last_blocks', True),
         dropout_fusion=0.3,
     ).to(device)
 
