@@ -209,10 +209,10 @@ def main() -> None:
 
     # ── Datasets & loaders ────────────────────────────────────────
     train_dataset = MultimodalDataset(
-        train_df, transform=get_train_transforms()
+        train_df, transform=get_train_transforms(), root_dir=str(_ROOT_DIR)
     )
     val_dataset = MultimodalDataset(
-        val_df, transform=get_eval_transforms()
+        val_df, transform=get_eval_transforms(), root_dir=str(_ROOT_DIR)
     )
 
     train_loader = DataLoader(

@@ -70,7 +70,7 @@ def main() -> None:
     logger.info("Loaded %d validation records.", len(val_df))
 
     # Datasets & loaders
-    val_dataset = MultimodalDataset(val_df, transform=get_eval_transforms())
+    val_dataset = MultimodalDataset(val_df, transform=get_eval_transforms(), root_dir=str(_ROOT_DIR))
     val_loader = DataLoader(
         val_dataset,
         batch_size=8,
