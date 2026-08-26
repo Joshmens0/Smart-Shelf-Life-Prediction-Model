@@ -51,23 +51,11 @@ tabular_model:
   hidden_dim: 128                  # Width of the two hidden MLP layers
   dropout: 0.3
   embedding_dim: 4                 # Embedding size for each categorical feature
-  numerical_cols:                  # Must match DataFrame column names exactly
+  numerical_cols:                  # Inference-time numerical inputs only
     - Temperature
     - Humidity
-    - Brix Mean
-    - Brix Min
-    - Brix Max
-    - pH Mean
-    - pH Min
-    - pH Max
-    - Texture Mean
-    - Texture Min
-    - Texture Max
-    - Weight Loss Mean
-    - Weight Loss Min
-    - Weight Loss Max
-    - Ripeness Index Mean
-    - Ripeness Index Min
-    - Ripeness Index Max
+  # Note: Biochemical columns (Brix, pH, Texture, Weight Loss,
+  # Ripeness Index) are privileged training data used only by the
+  # Teacher model's bio_branch. They are NOT tabular model inputs.
 
 

@@ -112,7 +112,9 @@ class MultimodalDataset(Dataset):
         row = self._df.iloc[idx]
 
         # --- Image ---
-        image_path = self._root_dir / str(row['Image Path'])
+        # Normalise backslashes (Windows paths in JSON) to forward slashes
+        raw_path = str(row['Image Path']).replace('\\', '/')
+        image_path = self._root_dir / raw_path
         if not image_path.exists():
             raise FileNotFoundError(f"Image not found: {image_path}")
         image = Image.open(image_path).convert('RGB')
@@ -284,12 +286,18 @@ class TeacherMultimodalModel(nn.Module):
             output_dim=tab_output_dim,
         )
 
-        # Privileged biochemical branch (3 inputs -> MLP -> 64-dim)
+        # Privileged biochemical branch (3 inputs -> hidden(32) -> 64-dim)
+        # Two-layer MLP captures non-linear biochemical interactions
+        # (e.g., low pH + high Brix = over-ripe) that a single linear
+        # layer cannot model, producing stronger distillation targets.
         self.bio_branch = nn.Sequential(
-            nn.Linear(3, bio_output_dim),
-            nn.BatchNorm1d(bio_output_dim),
+            nn.Linear(3, 32),
+            nn.BatchNorm1d(32),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_fusion * 0.5),
+            nn.Linear(32, bio_output_dim),
+            nn.BatchNorm1d(bio_output_dim),
+            nn.ReLU(inplace=True),
         )
 
         # Fusion head (fuses image + tabular + bio embeddings)

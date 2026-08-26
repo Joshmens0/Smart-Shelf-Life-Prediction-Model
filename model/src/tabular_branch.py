@@ -99,6 +99,12 @@ class TabularFeatureEncoder(nn.Module):
             for col, vocab in CATEGORICAL_COLS.items()
         })
 
+        # Inline normalisation for numerical features (Temperature, Humidity).
+        # Uses BatchNorm1d with affine=False so it learns running mean/var
+        # during training and applies them deterministically at eval time.
+        # This removes the need for an external StandardScaler + .pkl file.
+        self._num_norm = nn.BatchNorm1d(len(NUMERICAL_COLS), affine=False)
+
         self.output_dim: int = (
             len(NUMERICAL_COLS) + len(CATEGORICAL_COLS) * EMBEDDING_DIM
         )
@@ -121,6 +127,10 @@ class TabularFeatureEncoder(nn.Module):
         Returns:
             Float tensor of shape (B, output_dim).
         """
+        # Detect device from the module's own parameters so all tensors
+        # are created on the correct device (CPU or CUDA).
+        device = next(self.parameters()).device
+
         numerical_parts: list[torch.Tensor] = []
         categorical_parts: list[torch.Tensor] = []
 
@@ -128,9 +138,12 @@ class TabularFeatureEncoder(nn.Module):
         for col in NUMERICAL_COLS:
             values = [float(r.get(col) or 0.0) for r in records]
             numerical_parts.append(
-                torch.tensor(values, dtype=torch.float32).unsqueeze(1)
+                torch.tensor(values, dtype=torch.float32, device=device).unsqueeze(1)
             )
-        numerical_tensor = torch.cat(numerical_parts, dim=1)  # (B, 17)
+        numerical_tensor = torch.cat(numerical_parts, dim=1)  # (B, 2)
+
+        # Normalise numerical features (zero-mean, unit-variance)
+        numerical_tensor = self._num_norm(numerical_tensor)
 
         # --- Categorical features (embeddings) ---
         for col, vocab in CATEGORICAL_COLS.items():
@@ -138,11 +151,11 @@ class TabularFeatureEncoder(nn.Module):
             # Map unknown tokens to the last index (fallback)
             fallback = len(vocab) - 1
             indices  = [vocab.get(v, fallback) for v in raw]
-            idx_tensor = torch.tensor(indices, dtype=torch.long)
+            idx_tensor = torch.tensor(indices, dtype=torch.long, device=device)
             embed      = self._embeddings[col](idx_tensor)  # (B, EMBEDDING_DIM)
             categorical_parts.append(embed)
 
-        categorical_tensor = torch.cat(categorical_parts, dim=1)  # (B, 8)
+        categorical_tensor = torch.cat(categorical_parts, dim=1)  # (B, 4)
 
         return torch.cat([numerical_tensor, categorical_tensor], dim=1)  # (B, output_dim)
 

@@ -63,11 +63,20 @@ def main() -> None:
         raise FileNotFoundError(f"'{DATA_CSV}' not found. Run preprocessing first.")
     df = pd.read_csv(DATA_CSV)
 
-    # Perform validation split matching train.py
-    val_size   = max(1, int(0.2 * len(df)))
-    train_size = len(df) - val_size
-    val_df   = df.iloc[train_size:].reset_index(drop=True)
-    logger.info("Loaded %d validation records.", len(val_df))
+    # Perform validation split matching train.py (GroupShuffleSplit by Sample_ID)
+    import re
+    from sklearn.model_selection import GroupShuffleSplit
+
+    def _extract_sample_id(image_path: str) -> str:
+        filename = image_path.replace('\\', '/').split('/')[-1]
+        match = re.match(r'^([a-zA-Z]+\d+)', filename)
+        return match.group(1) if match else 'unknown'
+
+    df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    _, val_idx = next(gss.split(df, groups=df['Sample_ID']))
+    val_df = df.iloc[val_idx].reset_index(drop=True)
+    logger.info("Loaded %d validation records (%d sample groups).", len(val_df), val_df['Sample_ID'].nunique())
 
     # Datasets & loaders
     val_dataset = MultimodalDataset(val_df, transform=get_eval_transforms(), root_dir=str(_ROOT_DIR))

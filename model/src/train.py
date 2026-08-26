@@ -20,6 +20,7 @@ Expected files:
 
 import logging
 import math
+import re
 import time
 from pathlib import Path
 
@@ -27,6 +28,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import yaml
+from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import DataLoader, random_split
 
 from fusion_model import MultimodalDataset, MultimodalShelfLifeModel, TeacherMultimodalModel, collate_multimodal
@@ -107,6 +109,15 @@ def train_one_epoch(
         # Joint optimization
         loss = loss_teacher + loss_student
         loss.backward()
+
+        # Gradient clipping — stabilises joint teacher-student optimisation,
+        # especially early in training when randomly-initialised heads
+        # produce wild predictions and large gradient spikes.
+        torch.nn.utils.clip_grad_norm_(
+            list(student.parameters()) + list(teacher.parameters()),
+            max_norm=1.0,
+        )
+
         optimizer.step()
 
         total_loss += loss.item() * len(labels)
@@ -197,15 +208,30 @@ def main() -> None:
 
     logger.info("Loaded dataset: %d rows.", len(df))
 
-    # ── Train / validation split (80 / 20) ───────────────────────
-    val_size   = max(1, int(0.2 * len(df)))
-    train_size = len(df) - val_size
+    # ── Group-based train / validation split (80 / 20) ────────────
+    # Extract Sample_ID from each image filename so that all images
+    # from the same physical fruit stay entirely within one split,
+    # preventing data leakage from near-identical rows.
+    def _extract_sample_id(image_path: str) -> str:
+        filename = image_path.replace('\\', '/').split('/')[-1]
+        match = re.match(r'^([a-zA-Z]+\d+)', filename)
+        return match.group(1) if match else 'unknown'
 
-    # Reproducible split — change seed in config later if needed
-    train_df = df.iloc[:train_size].reset_index(drop=True)
-    val_df   = df.iloc[train_size:].reset_index(drop=True)
+    df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
+    n_groups = df['Sample_ID'].nunique()
+    logger.info("Identified %d unique sample groups for splitting.", n_groups)
 
-    logger.info("Split: %d train / %d validation.", train_size, val_size)
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, val_idx = next(gss.split(df, groups=df['Sample_ID']))
+    train_df = df.iloc[train_idx].reset_index(drop=True)
+    val_df   = df.iloc[val_idx].reset_index(drop=True)
+
+    logger.info(
+        "Split: %d train / %d validation (%d / %d sample groups).",
+        len(train_df), len(val_df),
+        df.iloc[train_idx]['Sample_ID'].nunique(),
+        df.iloc[val_idx]['Sample_ID'].nunique(),
+    )
 
     # ── Datasets & loaders ────────────────────────────────────────
     train_dataset = MultimodalDataset(
@@ -294,8 +320,11 @@ def main() -> None:
         {'params': backbone_params, 'lr': 1e-5}
     ], weight_decay=1e-4)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=5,
+    # Cosine annealing with warm restarts — smoothly decays LR and
+    # periodically "restarts" to escape local minima.  Much more
+    # effective than ReduceLROnPlateau with only 50 max epochs.
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=10, T_mult=2, eta_min=1e-6,
     )
 
     # ── Training ──────────────────────────────────────────────────
@@ -315,7 +344,7 @@ def main() -> None:
         train_loss          = train_one_epoch(student, teacher, train_loader, optimizer, criterion, device)
         val_loss, mae, rmse = evaluate(student, teacher, val_loader, criterion, device)
 
-        scheduler.step(val_loss)
+        scheduler.step(epoch)
         elapsed = time.time() - t0
 
         print(

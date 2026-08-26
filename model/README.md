@@ -74,14 +74,12 @@ Image (3×224×224) ──► EfficientNet-B0 ──► 256-dim embedding ──
 
 ### Parameter Budget
 
-The parameter budget depends on whether visual backbone fine-tuning is enabled:
+The parameter budget with partial visual backbone fine-tuning and enhanced teacher branch:
 
-*   **Baseline (Fully Frozen Visual Backbone)**:
-    *   Student: **`416,141`** trainable parameters, **`4,007,548`** frozen parameters.
-    *   Teacher: **`424,717`** trainable parameters, **`4,007,548`** frozen parameters.
-*   **Optimized (Partial Visual Backbone Fine-Tuning - Blocks 7 & 8 Unfrozen)**:
-    *   Student: **`1,545,533`** trainable parameters, **`2,878,156`** frozen parameters.
-    *   Teacher: **`1,554,109`** trainable parameters, **`2,878,156`** frozen parameters.
+*   **Student Model (Deployed Inference)**:
+    *   **`1,545,533`** trainable parameters, **`2,878,156`** frozen parameters (Total: **`4,423,689`**).
+*   **Teacher Model (LUPI Training)**:
+    *   **`1,556,157`** trainable parameters, **`2,878,156`** frozen parameters (Total: **`4,434,313`**).
 
 ---
 
@@ -198,20 +196,23 @@ print(f"Estimated shelf life: {days:.1f} day(s)")
 ---
 
 ## Training Details
-
-| Setting | Baseline (Fully Frozen) | Optimized (Partial Fine-Tuning) |
+ 
+| Setting | Initial Baseline (Sequential Split) | Optimized + Group Split (No Leakage) |
 |---|---|---|
-| **Framework** | LUPI Distillation | LUPI Distillation |
-| **Backbone** | EfficientNet-B0 (Frozen) | EfficientNet-B0 (Blocks 7 & 8 Unfrozen) |
-| **Augmentations** | Flips, Jitter | Crop, Rotation, Flips, Jitter |
-| **Optimizer** | Adam (lr=1e-3) | Two-group Adam (Heads: lr=1e-3, Backbone: lr=1e-5) |
+| **Framework** | LUPI Distillation | Enhanced LUPI + Tabular Normalization |
+| **Backbone** | EfficientNet-B0 (Blocks 7 & 8 Unfrozen) | EfficientNet-B0 (Blocks 7 & 8 Unfrozen) |
+| **Teacher Bio Branch** | Linear(3, 64) | 2-layer MLP (Linear(3, 32) → Linear(32, 64)) |
+| **Feature Normalization** | None (Raw Inputs) | Inline BatchNorm1d (Zero-Mean, Unit-Variance) |
+| **LR Scheduler** | ReduceLROnPlateau | CosineAnnealingWarmRestarts ($T_0=10, T_{\text{mult}}=2$) |
+| **Gradient Clipping** | None | $\text{max\_norm} = 1.0$ |
+| **Optimizer** | Two-group Adam (Heads: 1e-3, Backbone: 1e-5) | Two-group Adam (Heads: 1e-3, Backbone: 1e-5) |
 | **Loss** | Combined MSE ($\alpha = 0.5$) | Combined MSE ($\alpha = 0.5$) |
 | **Early Stopping** | patience=10 epochs | patience=10 epochs |
 | **Batch Size** | 8 | 8 |
-| **Train/Val Split** | 80 / 20 | 80 / 20 |
-| **Validation MAE** | **2.2241 days** | **2.6079 days** |
-| **Validation RMSE** | **2.4802 days** | **2.7726 days** |
-| **Validation R²** | **0.6259** | **0.5325** |
+| **Train/Val Split** | 80 / 20 (Sequential — Leaked) | **GroupShuffleSplit by Sample ID (Zero Leakage)** |
+| **Validation MAE** | 2.6079 days | **1.1970 days** |
+| **Validation RMSE** | 2.7726 days | **1.5742 days** |
+| **Validation R²** | 0.5325 | **0.9440** |
 
 ---
 
