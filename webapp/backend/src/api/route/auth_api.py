@@ -1,15 +1,17 @@
 import datetime
+import logging
+
 import bcrypt
 import jwt
-import logging
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.middleware.auth_guard import get_current_user
+from api.scheme import UserLoginSchema, UserRegisterSchema
 from core.config import settings
 from database import get_db
 from database.models import User
-from api.middleware.auth_guard import get_current_user
-from api.scheme import UserRegisterSchema, UserLoginSchema
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -48,7 +50,7 @@ async def login(payload: UserLoginSchema, response: Response, db: AsyncSession =
     stmt = select(User).where(User.email == payload.email)
     res = await db.execute(stmt)
     user = res.scalars().first()
-    
+
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
@@ -91,10 +93,10 @@ async def me(current_user: User | None = Depends(get_current_user)):
             "user_id": "anonymous-demo-id",
             "email": "anonymous@shelf-life.internal"
         }
-        
+
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
     return {
         "logged_in": True,
         "user_id": current_user.id,

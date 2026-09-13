@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from core.config import settings
+
 
 def add_cors(app: FastAPI) -> None:
     """Configures CORS middleware based on the deployment mode settings."""

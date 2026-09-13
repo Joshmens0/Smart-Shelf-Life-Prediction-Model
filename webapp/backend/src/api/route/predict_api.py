@@ -1,12 +1,14 @@
 import logging
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.middleware.auth_guard import get_current_user
 from core.config import settings
 from database import get_db
 from database.models import PredictionRecord, User
-from api.middleware.auth_guard import get_current_user
 from service.prediction_service import get_prediction_service
 
 logger = logging.getLogger(__name__)
@@ -29,18 +31,18 @@ async def predict_shelf_life(
             status_code=422,
             detail="Environment must be 'ambient' or 'controlled'"
         )
-        
+
     if not (0.0 <= humidity <= 100.0):
         raise HTTPException(
             status_code=422,
             detail="Humidity percentage must be between 0.0 and 100.0"
         )
-        
+
     # Check magic bytes for security (MIME validation standard in ArchonFlow)
     content = await image.read()
     if len(content) < 4:
         raise HTTPException(status_code=400, detail="Invalid image file uploaded (file is too small)")
-        
+
     # Reset stream pointer
     await image.seek(0)
 
@@ -50,13 +52,13 @@ async def predict_shelf_life(
     # Fallback to standard extensions if invalid suffix is provided
     if original_suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp"):
         original_suffix = ".jpg"
-        
+
     unique_filename = f"{file_uuid}{original_suffix}"
     upload_path = Path(settings.UPLOAD_DIR) / unique_filename
 
+    import asyncio
     try:
-        with open(upload_path, "wb") as f:
-            f.write(content)
+        await asyncio.to_thread(upload_path.write_bytes, content)
     except Exception as io_err:
         logger.error("Failed to write uploaded file to disk: %s", io_err)
         raise HTTPException(status_code=500, detail="Internal server error saving upload file")
@@ -97,8 +99,8 @@ async def predict_shelf_life(
     await db.refresh(record)
 
     logger.info(
-        "Prediction completed successfully. Days remaining: %.2f (id: %s)", 
-        days_remaining, 
+        "Prediction completed successfully. Days remaining: %.2f (id: %s)",
+        days_remaining,
         record.id
     )
 

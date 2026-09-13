@@ -1,8 +1,10 @@
-import jwt
 import logging
-from fastapi import Request, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+
+import jwt
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.config import settings
 from database import get_db
 from database.models import User
@@ -11,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
     """FastAPI Dependency that extracts the authenticated user.
-    
-    Checks 'Authorization: Bearer <token>' header first, falling back to the 
-    'access_token' cookie. If settings.REQUIRE_AUTH is False, it returns None 
+
+    Checks 'Authorization: Bearer <token>' header first, falling back to the
+    'access_token' cookie. If settings.REQUIRE_AUTH is False, it returns None
     as a mock/anonymous session wrapper.
     """
     # 1. Bypassed globally
@@ -30,7 +32,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     if not token:
         raise HTTPException(
-            status_code=401, 
+            status_code=401,
             detail="Authentication credentials missing (Bearer header or access_token cookie required)"
         )
 
@@ -39,7 +41,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token claims payload")
-        
+
         # Safe SQLAlchemy selection query format (.is_)
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)

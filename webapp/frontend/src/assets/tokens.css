@@ -1,0 +1,97 @@
+/* ══════════════════════════════════════════════════════════════════
+   Global Design Tokens — Universal App Template (Section 14)
+   Smart Shelf Life Prediction System
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  /* === Accent Colors (HSL) === */
+  --accent-purple:      hsl(262, 83%, 58%);
+  --accent-purple-glow: hsla(262, 83%, 58%, 0.35);
+  --accent-blue:        hsl(213, 94%, 68%);
+  --accent-blue-glow:   hsla(213, 94%, 68%, 0.3);
+  --accent-cyan:        hsl(189, 94%, 53%);
+  --accent-cyan-glow:   hsla(189, 94%, 53%, 0.35);
+  --accent-green:       hsl(152, 69%, 50%);
+  --accent-green-glow:  hsla(152, 69%, 50%, 0.3);
+  --accent-red:         hsl(0,   72%, 55%);
+  --accent-amber:       hsl(38,  92%, 50%);
+
+  /* === Backgrounds (Dark Mode Default) === */
+  --bg-base:            hsl(222, 20%, 8%);
+  --bg-surface:         hsl(222, 20%, 12%);
+  --bg-overlay:         hsl(222, 20%, 16%);
+  --bg-card:            hsl(222, 20%, 12%);
+  --bg-card-hover:      hsl(222, 20%, 15%);
+  --bg-glass:           hsla(222, 20%, 20%, 0.6);  /* glassmorphism */
+  --bg-glass-hover:     hsla(222, 20%, 25%, 0.7);
+
+  /* === Text === */
+  --text-primary:       hsl(0, 0%, 96%);
+  --text-secondary:     hsl(0, 0%, 65%);
+  --text-muted:         hsl(0, 0%, 40%);
+  --text-inverse:       hsl(0, 0%, 5%);
+
+  /* === Borders === */
+  --border-subtle:      hsl(222, 20%, 22%);
+  --border-default:     hsl(222, 20%, 28%);
+  --border-strong:      hsl(222, 20%, 40%);
+  --border-accent:      hsla(213, 94%, 68%, 0.3);
+
+  /* === Border Radius === */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-full: 9999px;
+
+  /* === Spacing Scale (8px base grid) === */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* === Typography === */
+  --font-body:     'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading:  'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', 'Fira Code', monospace;
+  --font-size-xs:   0.75rem;  /* 12px */
+  --font-size-sm:   0.875rem; /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg:   1.125rem; /* 18px */
+  --font-size-xl:   1.25rem;  /* 20px */
+  --font-size-2xl:  1.5rem;   /* 24px */
+  --font-size-3xl:  1.875rem; /* 30px */
+  --font-size-4xl:  2.25rem;  /* 36px */
+
+  /* === Shadows & Glows === */
+  --shadow-sm:  0 1px 3px hsla(0, 0%, 0%, 0.3);
+  --shadow-md:  0 4px 12px hsla(0, 0%, 0%, 0.4);
+  --shadow-lg:  0 8px 32px hsla(0, 0%, 0%, 0.5);
+  --glow-purple: 0 0 20px hsla(262, 83%, 58%, 0.4);
+  --glow-blue:   0 0 20px hsla(213, 94%, 68%, 0.35);
+  --glow-cyan:   0 0 20px hsla(189, 94%, 53%, 0.35);
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 68%), hsl(189, 94%, 53%));
+  --gradient-success: linear-gradient(135deg, hsl(152, 69%, 50%), hsl(160, 84%, 39%));
+  --gradient-warning: linear-gradient(135deg, hsl(38, 92%, 50%), hsl(28, 80%, 52%));
+  --gradient-danger:  linear-gradient(135deg, hsl(0, 72%, 55%), hsl(0, 84%, 45%));
+
+  /* === Transitions === */
+  --transition-fast:   150ms ease;
+  --transition-base:   250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* === Z-Index Scale === */
+  --z-base:     0;
+  --z-raised:   10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-modal:    300;
+  --z-toast:    400;
+  --z-tooltip:  500;
+}

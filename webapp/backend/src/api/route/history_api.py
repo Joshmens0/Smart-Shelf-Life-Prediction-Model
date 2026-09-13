@@ -1,12 +1,14 @@
 import logging
 from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete
+
+from api.middleware.auth_guard import get_current_user
 from core.config import settings
 from database import get_db
 from database.models import PredictionRecord, User
-from api.middleware.auth_guard import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["history"])
@@ -17,16 +19,16 @@ async def get_history(
     db: AsyncSession = Depends(get_db)
 ):
     """Retrieves prediction history records.
-    
+
     If REQUIRE_AUTH is True, it filters by the logged-in user.
     Otherwise, returns all records globally.
     """
     stmt = select(PredictionRecord)
-    
+
     # Filter by user if authentication is enabled
     if settings.REQUIRE_AUTH and current_user:
         stmt = stmt.where(PredictionRecord.user_id == current_user.id)
-        
+
     stmt = stmt.order_by(PredictionRecord.created_at.desc())
     res = await db.execute(stmt)
     records = res.scalars().all()

@@ -1,0 +1,127 @@
+name: smart-shelf-life
+
+services:
+  # ── Reverse Proxy & TLS Gateway ──
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: smart_shelf_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./webapp/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./webapp/nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_etc:/etc/nginx/ssl:ro
+      - certbot_challenge:/var/www/certbot:ro
+      - backend_uploads:/app/webapp/backend/tmp/uploads:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # ── FastAPI Backend API Service ──
+  backend:
+    build:
+      context: .
+      dockerfile: webapp/backend/Dockerfile
+    container_name: smart_shelf_backend
+    restart: unless-stopped
+    environment:
+      - DEV_MODE=false
+      - REQUIRE_AUTH=true
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-shelfuser}:${POSTGRES_PASSWORD:-shelfpass}@db:5432/${POSTGRES_DB:-shelflife}
+      - SECRET_KEY=${SECRET_KEY:-super-secret-production-key-change-this-now}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - HOST=0.0.0.0
+      - PORT=8000
+      - UPLOAD_DIR=/app/webapp/backend/tmp/uploads
+      - MODEL_CHECKPOINT_PATH=model/checkpoints/best_model.pt
+      - MODEL_CONFIG_PATH=model/config.yaml
+    volumes:
+      - backend_uploads:/app/webapp/backend/tmp/uploads
+      - ./model/checkpoints:/app/model/checkpoints:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── React Frontend Static SPA ──
+  frontend:
+    build:
+      context: .
+      dockerfile: webapp/frontend/Dockerfile
+    container_name: smart_shelf_frontend
+    restart: unless-stopped
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── PostgreSQL Database (Production) ──
+  db:
+    image: postgres:16-alpine
+    container_name: smart_shelf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shelfuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shelfpass}
+      POSTGRES_DB: ${POSTGRES_DB:-shelflife}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shelfuser} -d ${POSTGRES_DB:-shelflife}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Redis Cache & Rate Limiting ──
+  redis:
+    image: redis:7-alpine
+    container_name: smart_shelf_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  certbot_etc:
+    driver: local
+  certbot_challenge:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Base workspace path resolution
@@ -18,14 +19,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""
     HOST: str = "127.0.0.1"
     PORT: int = 8000
-    
+
     SECRET_KEY: str = "dev-secret-key-change-in-production-smart-shelf"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    
+
     # Model Weights & Config Paths (relative to REPO_ROOT)
     MODEL_CHECKPOINT_PATH: str = "model/checkpoints/best_model.pt"
     MODEL_CONFIG_PATH: str = "model/config.yaml"
-    
+
     # Storage
     UPLOAD_DIR: str = str(BACKEND_SRC_DIR.parent / "tmp" / "uploads")
 
@@ -34,7 +35,7 @@ class Settings(BaseSettings):
         if not self.DATABASE_URL:
             db_path = BACKEND_SRC_DIR.parent / "dev.db"
             self.DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
-        
+
         # Ensure upload folder exists
         Path(self.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 

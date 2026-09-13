@@ -1,7 +1,9 @@
 import datetime
 from uuid import uuid4
+
+from sqlalchemy import DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Float, DateTime, ForeignKey
+
 
 class Base(DeclarativeBase):
     """Shared declarative base for all ORM models."""
