@@ -31,9 +31,9 @@ services:
     container_name: smart_shelf_backend
     restart: unless-stopped
     environment:
-      - DEV_MODE=false
-      - REQUIRE_AUTH=true
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-shelfuser}:${POSTGRES_PASSWORD:-shelfpass}@db:5432/${POSTGRES_DB:-shelflife}
+      - DEV_MODE=${DEV_MODE:-false}
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-false}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-shelfuser}:${POSTGRES_PASSWORD:-shelfpass}@db:5432/${POSTGRES_DB:-shelflife}}
       - SECRET_KEY=${SECRET_KEY:-super-secret-production-key-change-this-now}
       - ACCESS_TOKEN_EXPIRE_MINUTES=1440
       - HOST=0.0.0.0
@@ -52,11 +52,11 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/health || exit 1"]
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
 
   # ── React Frontend Static SPA ──
   frontend:
@@ -68,8 +68,8 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 15s
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 5s

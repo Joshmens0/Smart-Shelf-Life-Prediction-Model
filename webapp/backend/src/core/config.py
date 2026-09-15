@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     MODEL_CONFIG_PATH: str = "model/config.yaml"
 
     # Storage
-    UPLOAD_DIR: str = str(BACKEND_SRC_DIR.parent / "tmp" / "uploads")
+    UPLOAD_DIR: str = ""
 
     def model_post_init(self, __context):
         # Auto-configure DATABASE_URL if empty
@@ -36,7 +36,23 @@ class Settings(BaseSettings):
             db_path = BACKEND_SRC_DIR.parent / "dev.db"
             self.DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
 
-        # Ensure upload folder exists
-        Path(self.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+        # Resolve UPLOAD_DIR safely across container and host environments
+        default_upload_dir = BACKEND_SRC_DIR.parent / "tmp" / "uploads"
+        if not self.UPLOAD_DIR:
+            target_path = default_upload_dir
+        else:
+            p = Path(self.UPLOAD_DIR)
+            if not p.is_absolute():
+                target_path = REPO_ROOT / p
+            else:
+                target_path = p
+
+        try:
+            target_path.mkdir(parents=True, exist_ok=True)
+            self.UPLOAD_DIR = str(target_path)
+        except Exception:
+            # Fallback to local backend/tmp/uploads if target is not writable
+            default_upload_dir.mkdir(parents=True, exist_ok=True)
+            self.UPLOAD_DIR = str(default_upload_dir)
 
 settings = Settings()

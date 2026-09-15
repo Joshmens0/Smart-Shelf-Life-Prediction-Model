@@ -60,6 +60,8 @@ COPY --chown=appuser:appuser model/ /app/model/
 # Copy backend source code
 COPY --chown=appuser:appuser webapp/backend/ /app/webapp/backend/
 
+RUN chmod -R 777 /app/webapp/backend/tmp
+
 USER appuser
 
 WORKDIR /app/webapp/backend
