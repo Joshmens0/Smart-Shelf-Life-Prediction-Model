@@ -40,8 +40,13 @@ logger = logging.getLogger(__name__)
 # Config
 # ------------------------------------------------------------------
 
-_SCRIPT_DIR = Path(__file__).parent.absolute()
+_SCRIPT_DIR = Path(__file__).parent.resolve()
 _ROOT_DIR   = _SCRIPT_DIR if (_SCRIPT_DIR / 'config.yaml').exists() else _SCRIPT_DIR.parent
+if not (_ROOT_DIR / 'config.yaml').exists():
+    for cand in [Path.cwd() / 'model', Path.cwd(), _SCRIPT_DIR.parent]:
+        if (cand / 'config.yaml').exists():
+            _ROOT_DIR = cand
+            break
 
 CONFIG_PATH = _ROOT_DIR / 'config.yaml'
 DATA_CSV    = _ROOT_DIR / 'preprocessed_data.csv'
@@ -78,14 +83,12 @@ def train_one_epoch(
     optimizer:  torch.optim.Optimizer,
     criterion:  nn.Module,
     device:     torch.device,
+    alpha:      float = 0.5,
 ) -> float:
     """Runs one full training epoch. Returns average training loss."""
     student.train()
     teacher.train()
     total_loss = 0.0
-
-    # Distillation alpha weight
-    ALPHA = 0.5
 
     for images, tabulars, labels, privileged in loader:
         images = images.to(device)
@@ -104,7 +107,7 @@ def train_one_epoch(
         # Student loss: combination of ground truth MSE + distillation MSE (vs teacher)
         loss_gt = criterion(preds_student, labels)
         loss_distill = criterion(preds_student, preds_teacher.detach())  # detach so teacher gradients don't flow through student distill loss
-        loss_student = (1.0 - ALPHA) * loss_gt + ALPHA * loss_distill
+        loss_student = (1.0 - alpha) * loss_gt + alpha * loss_distill
 
         # Joint optimization
         loss = loss_teacher + loss_student
@@ -209,15 +212,15 @@ def main() -> None:
     logger.info("Loaded dataset: %d rows.", len(df))
 
     # ── Group-based train / validation split (80 / 20) ────────────
-    # Extract Sample_ID from each image filename so that all images
-    # from the same physical fruit stay entirely within one split,
-    # preventing data leakage from near-identical rows.
+    # Ensure Sample_ID is present so that all images from the same
+    # physical fruit stay entirely within one split, preventing data leakage.
     def _extract_sample_id(image_path: str) -> str:
-        filename = image_path.replace('\\', '/').split('/')[-1]
+        filename = str(image_path).replace('\\', '/').split('/')[-1]
         match = re.match(r'^([a-zA-Z]+\d+)', filename)
         return match.group(1) if match else 'unknown'
 
-    df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
+    if 'Sample_ID' not in df.columns or df['Sample_ID'].isnull().any():
+        df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
     n_groups = df['Sample_ID'].nunique()
     logger.info("Identified %d unique sample groups for splitting.", n_groups)
 
@@ -247,6 +250,7 @@ def main() -> None:
         shuffle=True,
         collate_fn=collate_multimodal,
         num_workers=0,
+        drop_last=True,
     )
     val_loader = DataLoader(
         val_dataset,
@@ -341,7 +345,10 @@ def main() -> None:
     for epoch in range(1, EPOCHS + 1):
         t0 = time.time()
 
-        train_loss          = train_one_epoch(student, teacher, train_loader, optimizer, criterion, device)
+        # Distillation warmup: start at 0.0 (ground truth only), ramp up to 0.5 over 10 epochs
+        alpha = min(0.5, 0.5 * (epoch / 10.0))
+
+        train_loss          = train_one_epoch(student, teacher, train_loader, optimizer, criterion, device, alpha=alpha)
         val_loss, mae, rmse = evaluate(student, teacher, val_loader, criterion, device)
 
         scheduler.step(epoch)

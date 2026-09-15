@@ -112,11 +112,25 @@ class MultimodalDataset(Dataset):
         row = self._df.iloc[idx]
 
         # --- Image ---
-        # Normalise backslashes (Windows paths in JSON) to forward slashes
+        # Normalise backslashes and strip leading ./
         raw_path = str(row['Image Path']).replace('\\', '/')
-        image_path = self._root_dir / raw_path
-        if not image_path.exists():
-            raise FileNotFoundError(f"Image not found: {image_path}")
+        clean_rel = raw_path.lstrip('./')
+
+        candidates = [
+            self._root_dir / clean_rel,
+            self._root_dir / 'model' / clean_rel,
+            Path(raw_path),
+            Path(clean_rel),
+        ]
+        image_path = None
+        for cand in candidates:
+            if cand.exists():
+                image_path = cand
+                break
+
+        if image_path is None:
+            raise FileNotFoundError(f"Image not found for row {idx}: '{row['Image Path']}'. Tried: {candidates}")
+
         image = Image.open(image_path).convert('RGB')
         image = self._transform(image)
 
@@ -240,7 +254,9 @@ class MultimodalShelfLifeModel(nn.Module):
         fused = torch.cat([img_embed, tab_embed], dim=1)
 
         # Regression head: (B, fusion_input_dim) → (B,)
-        prediction = self.fusion_head(fused).squeeze(1)
+        raw_pred = self.fusion_head(fused).squeeze(1)
+        # Physically constrain shelf-life predictions to non-negative values
+        prediction = torch.relu(raw_pred)
 
         return prediction
 
@@ -343,7 +359,8 @@ class TeacherMultimodalModel(nn.Module):
         bio_embed    = self.bio_branch(privileged)
 
         fused = torch.cat([img_embed, tab_embed, bio_embed], dim=1)
-        prediction = self.fusion_head(fused).squeeze(1)
+        raw_pred = self.fusion_head(fused).squeeze(1)
+        prediction = torch.relu(raw_pred)
 
         return prediction
 

@@ -32,7 +32,13 @@
     1.69
   ],
   "images": [
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-3\\cbd2img1d3.png",
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-3\\cbd2img2d3.png"
+    "./data/mango/controlled-environment/non-destructive/day-3/cbd2img1d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbd2img2d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbnd2img2d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbd3img1d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbnd2img1d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbnd3img2d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbd3img2d3.png",
+    "./data/mango/controlled-environment/non-destructive/day-3/cbnd3img1d3.png"
   ]
 }

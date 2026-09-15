@@ -134,16 +134,27 @@ class TabularFeatureEncoder(nn.Module):
         numerical_parts: list[torch.Tensor] = []
         categorical_parts: list[torch.Tensor] = []
 
+        # Default fallback values for environmental sensors if missing
+        default_numerical = {'Temperature': 25.0, 'Humidity': 65.0}
+
         # --- Numerical features ---
         for col in NUMERICAL_COLS:
-            values = [float(r.get(col) or 0.0) for r in records]
+            values = []
+            for r in records:
+                v = r.get(col)
+                values.append(float(v) if v is not None else default_numerical.get(col, 0.0))
             numerical_parts.append(
                 torch.tensor(values, dtype=torch.float32, device=device).unsqueeze(1)
             )
         numerical_tensor = torch.cat(numerical_parts, dim=1)  # (B, 2)
 
         # Normalise numerical features (zero-mean, unit-variance)
-        numerical_tensor = self._num_norm(numerical_tensor)
+        if self.training and numerical_tensor.shape[0] == 1:
+            # Avoid BatchNorm1d crash on single-sample batch in training mode
+            if self._num_norm.running_mean is not None and self._num_norm.running_var is not None:
+                numerical_tensor = (numerical_tensor - self._num_norm.running_mean) / torch.sqrt(self._num_norm.running_var + self._num_norm.eps)
+        else:
+            numerical_tensor = self._num_norm(numerical_tensor)
 
         # --- Categorical features (embeddings) ---
         for col, vocab in CATEGORICAL_COLS.items():

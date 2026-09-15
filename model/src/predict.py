@@ -82,9 +82,13 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     # Load configuration
-    config_file = root_dir / args.config
+    config_file = Path(args.config)
     if not config_file.exists():
-        logger.error("Configuration file '%s' not found.", config_file)
+        config_file = root_dir / args.config
+    if not config_file.exists():
+        config_file = root_dir / "model" / args.config
+    if not config_file.exists():
+        logger.error("Configuration file '%s' not found.", args.config)
         sys.exit(1)
 
     config = load_config(config_file)
@@ -92,9 +96,13 @@ def main() -> None:
     tab_cfg = config["tabular_model"]
 
     # Locate checkpoint
-    ckpt_path = root_dir / args.checkpoint
+    ckpt_path = Path(args.checkpoint)
     if not ckpt_path.exists():
-        logger.error("Model checkpoint '%s' not found. Please train the model first.", ckpt_path)
+        ckpt_path = root_dir / args.checkpoint
+    if not ckpt_path.exists():
+        ckpt_path = root_dir / "model" / args.checkpoint
+    if not ckpt_path.exists():
+        logger.error("Model checkpoint '%s' not found. Please train the model first.", args.checkpoint)
         sys.exit(1)
 
     # Initialize model
@@ -123,7 +131,11 @@ def main() -> None:
     # Preprocess image
     image_path = Path(args.image)
     if not image_path.exists():
-        logger.error("Image file '%s' not found.", image_path)
+        image_path = root_dir / args.image
+    if not image_path.exists():
+        image_path = root_dir / "model" / args.image
+    if not image_path.exists():
+        logger.error("Image file '%s' not found.", args.image)
         sys.exit(1)
 
     logger.info("Preprocessing image '%s'...", image_path)
@@ -148,7 +160,7 @@ def main() -> None:
     logger.info("Running inference...")
     with torch.no_grad():
         prediction = model(image_tensor, tabular_record)
-        days_remaining = prediction.item()
+        days_remaining = max(0.0, prediction.item())
 
     print("\n" + "=" * 40)
     print("  Smart Shelf Life Prediction Result")

@@ -21,8 +21,13 @@ from image_backbone import get_eval_transforms
 
 logger = logging.getLogger(__name__)
 
-_SCRIPT_DIR = Path(__file__).parent.absolute()
+_SCRIPT_DIR = Path(__file__).parent.resolve()
 _ROOT_DIR   = _SCRIPT_DIR if (_SCRIPT_DIR / 'config.yaml').exists() else _SCRIPT_DIR.parent
+if not (_ROOT_DIR / 'config.yaml').exists():
+    for cand in [Path.cwd() / 'model', Path.cwd(), _SCRIPT_DIR.parent]:
+        if (cand / 'config.yaml').exists():
+            _ROOT_DIR = cand
+            break
 
 CONFIG_PATH = _ROOT_DIR / 'config.yaml'
 DATA_CSV    = _ROOT_DIR / 'preprocessed_data.csv'
@@ -68,11 +73,13 @@ def main() -> None:
     from sklearn.model_selection import GroupShuffleSplit
 
     def _extract_sample_id(image_path: str) -> str:
-        filename = image_path.replace('\\', '/').split('/')[-1]
+        filename = str(image_path).replace('\\', '/').split('/')[-1]
         match = re.match(r'^([a-zA-Z]+\d+)', filename)
         return match.group(1) if match else 'unknown'
 
-    df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
+    if 'Sample_ID' not in df.columns or df['Sample_ID'].isnull().any():
+        df['Sample_ID'] = df['Image Path'].apply(_extract_sample_id)
+
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     _, val_idx = next(gss.split(df, groups=df['Sample_ID']))
     val_df = df.iloc[val_idx].reset_index(drop=True)

@@ -1,0 +1,45 @@
+{
+  "environment": "ambient",
+  "temperature": 25.0,
+  "humidity": 90.0,
+  "light_type": "fluorescent",
+  "date_started": "2026-07-20",
+  "day_index": 7,
+  "days_remaining": 6,
+  "brix": [
+    15.20,
+    15.40
+  ],
+  "ph": [
+    4.04,
+    4.28,
+    4.31
+  ],
+  "texture": [
+    [
+      1177,
+      117,
+      0.07,
+      96,
+      0.2
+    ],
+    [
+      1739,
+      95,
+      0.07,
+      8.8,
+      3.8
+    ]
+  ],
+  "weight_loss": [
+    944.66,
+    950.37,
+    1058.18
+  ],
+  "ripeness_index": [
+    2.7,
+    2.74,
+    2.57
+  ],
+  "images": []
+}

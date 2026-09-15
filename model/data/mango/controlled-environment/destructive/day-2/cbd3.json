@@ -32,7 +32,9 @@
     1.14
   ],
   "images": [
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-2\\cbd3img1d2.png",
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-2\\cbd3img2d2.png"
+    "./data/mango/controlled-environment/non-destructive/day-2/cbd3img1d2.png",
+    "./data/mango/controlled-environment/non-destructive/day-2/cbd3img2d2.png",
+    "./data/mango/controlled-environment/non-destructive/day-2/cbnd3img1d2.png",
+    "./data/mango/controlled-environment/non-destructive/day-2/cbnd3img2d2.png"
   ]
 }

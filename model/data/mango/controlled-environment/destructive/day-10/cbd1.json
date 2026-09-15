@@ -32,7 +32,9 @@
     2.99
   ],
   "images": [
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-10\\cbd1img1d10.png",
-    ".\\data\\mango\\controlled-environment\\non-destructive\\day-10\\cbd1img2d10.png"
+    "./data/mango/controlled-environment/non-destructive/day-10/cbd1img1d10.png",
+    "./data/mango/controlled-environment/non-destructive/day-10/cbd1img2d10.png",
+    "./data/mango/controlled-environment/non-destructive/day-10/cbnd1img1d10.png",
+    "./data/mango/controlled-environment/non-destructive/day-10/cbnd1img2d10.png"
   ]
 }
