@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
               setError(null);
               setSuccess(null);
             }}
-            style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', hoverColor: 'var(--text-primary)' }}
+            style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}
           >
             {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>

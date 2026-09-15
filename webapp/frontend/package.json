@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.63.3",
+    "lucide-react": "^0.469.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.0",
-    "lucide-react": "^0.469.0"
+    "react-router-dom": "^7.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

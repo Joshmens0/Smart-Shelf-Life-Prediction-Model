@@ -122,6 +122,19 @@ export const HistoryPage: React.FC = () => {
         </p>
       </header>
 
+      {error && (
+        <div style={{
+          padding: '12px 16px',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid var(--accent-red, #ef4444)',
+          borderRadius: 'var(--radius-md, 8px)',
+          color: 'var(--accent-red, #ef4444)',
+          marginBottom: '24px'
+        }}>
+          {error}
+        </div>
+      )}
+
       {/* Analytics stats summaries grids */}
       <section style={{
         display: 'grid',
