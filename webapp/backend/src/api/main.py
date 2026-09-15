@@ -31,10 +31,12 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database connection engine ...")
     init_engine(settings.DATABASE_URL)
 
-    # In DEV_MODE or SQLite, auto-create tables if they don't exist
-    if settings.DEV_MODE or "sqlite" in settings.DATABASE_URL:
-        logger.info("Ensuring database schema exists (DEV_MODE / SQLite) ...")
+    # Ensure database schema tables exist
+    logger.info("Ensuring database schema tables exist ...")
+    try:
         await create_tables()
+    except Exception as e:
+        logger.warning("Database schema auto-creation note: %s", e)
 
     yield
     # ── Shutdown ──

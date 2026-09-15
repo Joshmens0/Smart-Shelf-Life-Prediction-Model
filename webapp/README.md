@@ -85,6 +85,8 @@ Follow the complete instructions in [`webapp/docs/DEPLOYMENT_GUIDE.md`](file:///
 2. **Clone repo**: `git clone https://github.com/Joshmens0/Smart-Shelf-Life-Prediction-Model.git && cd Smart-Shelf-Life-Prediction-Model`
 3. **Provision server**: `bash webapp/scripts/setup_vps.sh`
 4. **Deploy**: `bash webapp/scripts/deploy.sh`
+   - *Clean reset without cache*: `bash webapp/scripts/deploy.sh --reset`
+   - *Rebuild without cache*: `bash webapp/scripts/deploy.sh --no-cache`
 
 ---
 

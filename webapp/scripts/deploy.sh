@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════
 # Smart Shelf Life Predictor — Production Deployment Script
-# Rebuilds and launches Docker Compose containers safely.
+# Supports clean resets, no-cache builds, and health verification.
+#
+# Usage:
+#   bash webapp/scripts/deploy.sh              # Standard deploy
+#   bash webapp/scripts/deploy.sh --no-cache   # Rebuild without Docker cache
+#   bash webapp/scripts/deploy.sh --reset      # Wipe containers/volumes & rebuild fresh
 # ══════════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -11,6 +16,7 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,40 +24,92 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+# Parse flags
+NO_CACHE=false
+RESET_ALL=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-cache)
+            NO_CACHE=true
+            ;;
+        --reset|-r)
+            RESET_ALL=true
+            NO_CACHE=true
+            ;;
+        --help|-h)
+            echo -e "${BOLD}Usage:${NC} bash webapp/scripts/deploy.sh [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --no-cache    Rebuild all Docker images without using cached layers."
+            echo "  --reset, -r   Complete reset: stops containers, removes volumes (-v),"
+            echo "                rebuilds without cache, and starts fresh."
+            echo "  --help, -h    Display this help text."
+            exit 0
+            ;;
+        *)
+            echo -e "${YELLOW}[WARNING] Unknown argument: $arg (ignoring)${NC}"
+            ;;
+    esac
+done
+
 echo -e "${CYAN}======================================================${NC}"
 echo -e "${CYAN}  Deploying Smart Shelf Life Application              ${NC}"
+if [ "$RESET_ALL" = true ]; then
+    echo -e "${YELLOW}  Mode: FULL RESET (Wiping old containers & volumes)  ${NC}"
+elif [ "$NO_CACHE" = true ]; then
+    echo -e "${YELLOW}  Mode: NO-CACHE (Rebuilding images from scratch)     ${NC}"
+fi
 echo -e "${CYAN}======================================================${NC}"
 
 # Check .env
 if [ ! -f ".env" ]; then
-    echo -e "${RED}[ERROR] .env file not found! Run bash webapp/scripts/setup_vps.sh first.${NC}"
+    echo -e "${RED}[ERROR] .env file not found in ${REPO_ROOT}!${NC}"
+    echo -e "Copy .env.example to .env and configure it before deploying:"
+    echo -e "  cp .env.example .env"
     exit 1
 fi
 
-# 1. Pull latest git code if in a git repository
+# 1. Reset / Teardown if requested
+if [ "$RESET_ALL" = true ]; then
+    echo -e "\n${YELLOW}[Step] Resetting existing containers, networks, and volumes...${NC}"
+    docker compose down -v --remove-orphans || true
+fi
+
+# 2. Pull latest git updates if inside a tracking repository
 if [ -d ".git" ]; then
     echo -e "\n${YELLOW}[1/4] Pulling latest repository updates...${NC}"
     git pull origin main || true
 fi
 
-# 2. Build Docker images
-echo -e "\n${YELLOW}[2/4] Building production container images...${NC}"
-docker compose build
+# 3. Build Docker container images
+echo -e "\n${YELLOW}[2/4] Building container images...${NC}"
+if [ "$NO_CACHE" = true ]; then
+    echo -e "  Running: ${CYAN}docker compose build --no-cache${NC}"
+    docker compose build --no-cache
+else
+    docker compose build
+fi
 
-# 3. Start or update containers
+# 4. Start containers
 echo -e "\n${YELLOW}[3/4] Launching containers in detached mode...${NC}"
-docker compose up -d --remove-orphans
+if [ "$RESET_ALL" = true ] || [ "$NO_CACHE" = true ]; then
+    docker compose up -d --force-recreate --remove-orphans
+else
+    docker compose up -d --remove-orphans
+fi
 
-# 4. Wait for healthcheck verification
+# 5. Wait for healthcheck verification
 echo -e "\n${YELLOW}[4/4] Verifying service health status...${NC}"
 sleep 5
 
-MAX_RETRIES=15
+MAX_RETRIES=20
 COUNTER=0
 HEALTHY=false
 
 while [ $COUNTER -lt $MAX_RETRIES ]; do
-    if docker compose ps | grep -q "smart_shelf_backend.*healthy"; then
+    # Check if backend container is reporting healthy or responding to health endpoint
+    if docker compose ps | grep -qi "backend.*healthy" || docker compose exec -T backend curl -sf http://localhost:8000/api/health >/dev/null 2>&1; then
         HEALTHY=true
         break
     fi
@@ -65,14 +123,20 @@ if [ "$HEALTHY" = true ]; then
     echo -e "${GREEN}[SUCCESS] All application services are up and healthy!${NC}"
     docker compose ps
 else
-    echo -e "${YELLOW}[WARNING] Backend is still initializing or starting up. Check logs:${NC}"
-    docker compose logs backend --tail=30
+    echo -e "${RED}[ERROR] Backend failed to become healthy within the allotted time.${NC}"
+    echo -e "${YELLOW}── Backend Logs (last 40 lines) ──${NC}"
+    docker compose logs backend --tail=40
+    echo -e "\n${YELLOW}── Database Logs (last 20 lines) ──${NC}"
+    docker compose logs db --tail=20 || true
+    echo -e "\n${RED}Tip: To perform a 100% clean reset without cache, run:${NC}"
+    echo -e "  ${CYAN}bash webapp/scripts/deploy.sh --reset${NC}"
+    exit 1
 fi
 
 echo -e "\n${CYAN}======================================================${NC}"
 echo -e "Useful Commands:"
-echo -e "  - View live logs    : ${CYAN}docker compose logs -f${NC}"
-echo -e "  - Backend logs only : ${CYAN}docker compose logs -f backend${NC}"
-echo -e "  - Stop application  : ${CYAN}docker compose down${NC}"
-echo -e "  - Restart services  : ${CYAN}docker compose restart${NC}"
+echo -e "  - View live logs      : ${CYAN}docker compose logs -f${NC}"
+echo -e "  - Backend logs only   : ${CYAN}docker compose logs -f backend${NC}"
+echo -e "  - Stop application    : ${CYAN}docker compose down${NC}"
+echo -e "  - Clean reset deploy  : ${CYAN}bash webapp/scripts/deploy.sh --reset${NC}"
 echo -e "======================================================"

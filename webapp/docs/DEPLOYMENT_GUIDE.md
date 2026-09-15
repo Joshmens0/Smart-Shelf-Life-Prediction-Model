@@ -70,6 +70,10 @@ If you have a domain pointing to your VPS IP:
    ```bash
    bash webapp/scripts/deploy.sh
    ```
+   > **Note**: To force a clean reset without any cached Docker layers or stale containers, run:
+   > ```bash
+   > bash webapp/scripts/deploy.sh --reset
+   > ```
 
 ### Step 5: Verify Deployment
 Open your browser and navigate to:
