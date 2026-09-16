@@ -117,7 +117,21 @@ if command -v systemctl &>/dev/null; then
     fi
 fi
 
-# 5. Start containers
+# 5. Ensure SSL certificates exist so Nginx can start cleanly
+echo -e "\n${YELLOW}[Notice] Ensuring SSL certificates exist for Nginx...${NC}"
+docker run --rm -v "smart-shelf-life_certbot_etc:/etc/nginx/ssl" alpine sh -c "
+    mkdir -p /etc/nginx/ssl/live
+    if [ ! -f /etc/nginx/ssl/live/fullchain.pem ] || [ ! -f /etc/nginx/ssl/live/privkey.pem ]; then
+        echo 'Generating self-signed fallback SSL certificate...'
+        apk add --no-cache openssl >/dev/null 2>&1
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout /etc/nginx/ssl/live/privkey.pem \
+            -out /etc/nginx/ssl/live/fullchain.pem \
+            -subj '/CN=localhost' >/dev/null 2>&1
+    fi
+" 2>/dev/null || true
+
+# 6. Start containers
 echo -e "\n${YELLOW}[3/4] Launching containers in detached mode...${NC}"
 if [ "$RESET_ALL" = true ] || [ "$NO_CACHE" = true ]; then
     docker compose up -d --force-recreate --remove-orphans
