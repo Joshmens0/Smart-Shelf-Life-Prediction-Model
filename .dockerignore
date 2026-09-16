@@ -2,25 +2,32 @@
 .git
 .gitignore
 
-# Virtual Environments & Python Cache
+# Virtual Environments & Python Cache (prevent multi-GB copies and symlink failures)
 .venv
-*/.venv
+**/.venv
+**/.venv/**
 **/__pycache__
 **/*.pyc
 **/*.pyo
 **/*.pyd
 .pytest_cache
+**/.pytest_cache
+.ruff_cache
+**/.ruff_cache
 .coverage
 htmlcov
 
 # Node & Frontend Build Cache
 node_modules
+**/node_modules
+**/node_modules/**
 webapp/frontend/node_modules
 webapp/frontend/dist
 webapp/frontend/.vite
 
-# Large Training Raw Datasets (Model weights are in model/checkpoints/)
-model/data/
+# Large Training Raw Datasets (Only model/checkpoints/ is needed)
+model/data
+model/data/**
 model/preprocessed_data.csv
 
 # Temporary Uploads and Local Database

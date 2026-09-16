@@ -54,11 +54,15 @@ RUN useradd -m -u 1000 -s /bin/bash appuser && \
     mkdir -p /app/webapp/backend/tmp/uploads /app/model/checkpoints && \
     chown -R appuser:appuser /app
 
-# Copy model architecture, configuration and checkpoint
-COPY --chown=appuser:appuser model/ /app/model/
+# Copy model architecture, configuration and checkpoint (excludes datasets and venvs)
+COPY --chown=appuser:appuser model/src/ /app/model/src/
+COPY --chown=appuser:appuser model/config.yaml /app/model/config.yaml
+COPY --chown=appuser:appuser model/checkpoints/ /app/model/checkpoints/
 
-# Copy backend source code
-COPY --chown=appuser:appuser webapp/backend/ /app/webapp/backend/
+# Copy backend source code, migrations and configuration
+COPY --chown=appuser:appuser webapp/backend/src/ /app/webapp/backend/src/
+COPY --chown=appuser:appuser webapp/backend/migrations/ /app/webapp/backend/migrations/
+COPY --chown=appuser:appuser webapp/backend/alembic.ini /app/webapp/backend/alembic.ini
 
 RUN chmod -R 777 /app/webapp/backend/tmp
 

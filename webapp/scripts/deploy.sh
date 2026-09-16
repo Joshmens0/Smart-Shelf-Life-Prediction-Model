@@ -74,6 +74,8 @@ fi
 if [ "$RESET_ALL" = true ]; then
     echo -e "\n${YELLOW}[Step] Resetting existing containers, networks, and volumes...${NC}"
     docker compose down -v --remove-orphans || true
+    echo -e "${YELLOW}[Step] Pruning dangling Docker build cache...${NC}"
+    docker builder prune -f || true
 fi
 
 # 2. Pull latest git updates if inside a tracking repository
@@ -86,9 +88,19 @@ fi
 echo -e "\n${YELLOW}[2/4] Building container images...${NC}"
 if [ "$NO_CACHE" = true ]; then
     echo -e "  Running: ${CYAN}docker compose build --no-cache${NC}"
-    docker compose build --no-cache
+    if ! docker compose build --no-cache; then
+        echo -e "\n${RED}[ERROR] Docker build failed during image export or compilation!${NC}"
+        echo -e "${YELLOW}Common causes and fixes:${NC}"
+        echo -e "  1. ${BOLD}Disk space full${NC}: Check with ${CYAN}df -h${NC}. Free space with: ${CYAN}docker system prune -a --volumes -f${NC}"
+        echo -e "  2. ${BOLD}BuildKit cache error${NC}: Clear builder state with ${CYAN}docker builder prune -a -f${NC}"
+        echo -e "  3. ${BOLD}Docker daemon lock${NC}: Restart docker with ${CYAN}sudo systemctl restart docker${NC}"
+        exit 1
+    fi
 else
-    docker compose build
+    if ! docker compose build; then
+        echo -e "\n${RED}[ERROR] Docker build failed! Run with --no-cache or --reset to rebuild cleanly.${NC}"
+        exit 1
+    fi
 fi
 
 # 4. Start containers
