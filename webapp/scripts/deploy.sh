@@ -103,7 +103,21 @@ else
     fi
 fi
 
-# 4. Start containers
+# 4. Free port 80 / 443 if bound by host services (e.g. system nginx/apache)
+if command -v systemctl &>/dev/null; then
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        echo -e "\n${YELLOW}[Notice] Host Nginx is active. Stopping and disabling to free port 80/443 for Docker...${NC}"
+        systemctl stop nginx 2>/dev/null || sudo systemctl stop nginx 2>/dev/null || true
+        systemctl disable nginx 2>/dev/null || sudo systemctl disable nginx 2>/dev/null || true
+    fi
+    if systemctl is-active --quiet apache2 2>/dev/null; then
+        echo -e "\n${YELLOW}[Notice] Host Apache2 is active. Stopping and disabling to free port 80/443 for Docker...${NC}"
+        systemctl stop apache2 2>/dev/null || sudo systemctl stop apache2 2>/dev/null || true
+        systemctl disable apache2 2>/dev/null || sudo systemctl disable apache2 2>/dev/null || true
+    fi
+fi
+
+# 5. Start containers
 echo -e "\n${YELLOW}[3/4] Launching containers in detached mode...${NC}"
 if [ "$RESET_ALL" = true ] || [ "$NO_CACHE" = true ]; then
     docker compose up -d --force-recreate --remove-orphans

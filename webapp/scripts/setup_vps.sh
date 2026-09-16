@@ -53,6 +53,18 @@ echo -e "\n${YELLOW}[3/6] Starting Fail2Ban service...${NC}"
 systemctl enable fail2ban
 systemctl start fail2ban
 
+# Disable host web servers if running so Docker Nginx can bind to ports 80/443
+if systemctl is-active --quiet nginx 2>/dev/null; then
+    echo -e "${YELLOW}Host Nginx is active. Stopping and disabling to free ports 80/443 for Docker...${NC}"
+    systemctl stop nginx
+    systemctl disable nginx || true
+fi
+if systemctl is-active --quiet apache2 2>/dev/null; then
+    echo -e "${YELLOW}Host Apache2 is active. Stopping and disabling to free ports 80/443 for Docker...${NC}"
+    systemctl stop apache2
+    systemctl disable apache2 || true
+fi
+
 # 4. Install Docker & Docker Compose Plugin
 echo -e "\n${YELLOW}[4/6] Installing Docker Engine & Docker Compose...${NC}"
 if ! command -v docker &> /dev/null; then
