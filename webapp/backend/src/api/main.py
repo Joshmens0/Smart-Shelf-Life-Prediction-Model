@@ -5,7 +5,14 @@ Sets up database connections, registers routers, handles exceptions,
 attaches structured JSON logging middleware, and mounts static uploads serving directory.
 """
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Ensure backend src is on sys.path even when running python3 main.py directly
+_src_dir = str(Path(__file__).resolve().parent.parent)
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -104,3 +111,8 @@ async def health():
         "version": "1.0.0",
         "auth_required": settings.REQUIRE_AUTH,
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host=settings.HOST, port=settings.PORT)

@@ -7,13 +7,13 @@
   "day_index": 8,
   "days_remaining": 5,
   "brix": [
-    15.2,
-    15.4
+    13.1,
+    13.9
   ],
   "ph": [
-    4.04,
-    4.28,
-    4.31
+    4.90,
+    5.05,
+    4.99
   ],
   "texture": [
     [
@@ -24,7 +24,7 @@
       0.2
     ],
     [
-      1739,
+      1250,
       95,
       0.07,
       8.8,
@@ -37,9 +37,9 @@
     1058.18
   ],
   "ripeness_index": [
-    2.7,
-    2.74,
-    2.57
+    3.90,
+    4.12,
+    4.00
   ],
   "images": [
     "./data/mango/ambient-environment/non-destructive/Day 8/Aa4SBd8.jpg",
@@ -70,6 +70,8 @@
     "./data/mango/ambient-environment/non-destructive/Day 8/Aa4SLd8.jpg",
     "./data/mango/ambient-environment/non-destructive/Day 8/Aa5SBd8.jpg",
     "./data/mango/ambient-environment/non-destructive/Day 8/Aa3SRd8.jpg",
-    "./data/mango/ambient-environment/non-destructive/Day 8/Aa5STd8.jpg"
+    "./data/mango/ambient-environment/non-destructive/Day 8/Aa5STd8.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 9/Aa4STd8.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 9/Aa2Bd8.jpg"
   ]
 }

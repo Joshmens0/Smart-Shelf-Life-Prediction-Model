@@ -31,8 +31,16 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = ""
 
     def model_post_init(self, __context):
-        # Auto-configure DATABASE_URL if empty
-        if not self.DATABASE_URL:
+        # Auto-configure DATABASE_URL: fallback to SQLite if empty or if docker host 'db' is unresolvable locally
+        import socket
+        use_sqlite = not self.DATABASE_URL
+        if "postgresql" in self.DATABASE_URL and "@db:" in self.DATABASE_URL:
+            try:
+                socket.gethostbyname("db")
+            except Exception:
+                use_sqlite = True
+
+        if use_sqlite:
             db_path = BACKEND_SRC_DIR.parent / "dev.db"
             self.DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
 

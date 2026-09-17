@@ -1,35 +1,45 @@
 {
   "environment": "ambient",
-  "temperature": 28.9,
-  "humidity": 61.0,
-  "light_type": "LED",
-  "date_started": "2026-05-23",
+  "temperature": 25.0,
+  "humidity": 90.0,
+  "light_type": "fluorescent",
+  "date_started": "2026-07-20",
   "day_index": 7,
-  "days_remaining": 0,
+  "days_remaining": 6,
   "brix": [
-    16.76,
-    16.23,
-    16.2
+    12.20,
+    12.40
   ],
   "ph": [
-    5.3,
-    5.27,
-    5.14
+    4.72,
+    4.88,
+    4.80
   ],
   "texture": [
-    7.24,
-    7.63,
-    7.61
+    [
+      1177,
+      117,
+      0.07,
+      96,
+      0.2
+    ],
+    [
+      1739,
+      95,
+      0.07,
+      8.8,
+      3.8
+    ]
   ],
   "weight_loss": [
-    17.75,
-    17.55,
-    17.9
+    944.66,
+    950.37,
+    1058.18
   ],
   "ripeness_index": [
-    5.26,
-    5.11,
-    5.24
+    3.68,
+    3.85,
+    3.75
   ],
   "images": [
     "./data/mango/ambient-environment/non-destructive/day-7/aad1img1d7.png",

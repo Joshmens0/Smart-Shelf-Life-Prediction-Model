@@ -7,28 +7,28 @@
   "day_index": 13,
   "days_remaining": 0,
   "brix": [
-    1.3440,
-    1.3445
+    11.2,
+    11.8
   ],
   "ph": [
-    4.04,
-    4.28,
-    4.31
+    5.65,
+    5.92,
+    5.80
   ],
   "texture": [
     [
-      3820,
-      834,
+      350,
+      65,
       0.17,
-      9.3,
-      11.2
+      3.3,
+      0.05
     ],
     [
-      3431,
-      915,
+      280,
+      68,
       0.17,
-      9.6,
-      11.0
+      2.2,
+      0.02
     ]
   ],
   "weight_loss": [
@@ -37,9 +37,40 @@
     1058.18
   ],
   "ripeness_index": [
-    2.7,
-    2.74,
-    2.57
+    4.88,
+    5.00,
+    4.95
   ],
-  "images": []
+  "images": [
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4SBd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa5Td13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1SBd13(1).jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa2Td13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4Bd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1STd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3SBd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa5SLd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1SLd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1STd13(1).jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1SBd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1Bd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa2SBd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4STd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3STd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa2SRd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3Td13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1SRd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1Td13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3SRd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa2STd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa1SLd13(1).jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3Bd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa3SLd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4Td13jpg.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4SLd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa2Bd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa5SRd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa4SRd13.jpg",
+    "./data/mango/ambient-environment/non-destructive/Day 13/Aa5Bd13.jpg"
+  ]
 }
